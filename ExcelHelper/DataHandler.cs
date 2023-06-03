@@ -106,16 +106,26 @@ namespace DataHandler
         public List<string> FindDivisionData()
         {
             List<string> tmpList = new List<string>();
+            List<string> tmpForDistinguishFileName = new List<string>();
 
             foreach (string e in this.DataDict.Keys)
             {
-                if (this.DataDict[e].files.Count > 1)
+                tmpForDistinguishFileName.Clear();
+                this.DataDict[e].files.ForEach(s => tmpForDistinguishFileName.Add(s));
+
+                tmpForDistinguishFileName.RemoveAll(s => s.Contains("Replace") || s.Contains("Override"));
+
+                if (tmpForDistinguishFileName.Count > 1)
                 {
                     tmpList.Add(e);
                 }
             }
 
             return tmpList;
+        }
+        public bool IsDataContains(string _data)
+        {
+            return DataDict.ContainsKey(_data);
         }
     }
 

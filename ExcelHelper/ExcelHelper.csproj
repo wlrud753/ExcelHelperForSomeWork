@@ -107,6 +107,8 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="StreamManager.cs" />
+    <Compile Include="QuestManager.cs" />
     <Compile Include="DataHandler.cs" />
     <Compile Include="ExcelManager.cs" />
     <Compile Include="PopUpNoti.cs">

@@ -31,6 +31,7 @@
             this.NotiTextLabel = new System.Windows.Forms.Label();
             this.ConfirmationButton = new System.Windows.Forms.Button();
             this.WorkCancelButton = new System.Windows.Forms.Button();
+            this.WorkProgressBar = new System.Windows.Forms.ProgressBar();
             this.SuspendLayout();
             // 
             // NotiTextLabel
@@ -68,12 +69,20 @@
             this.WorkCancelButton.UseVisualStyleBackColor = true;
             this.WorkCancelButton.Click += new System.EventHandler(this.WorkCancelButton_Click);
             // 
+            // WorkProgressBar
+            // 
+            this.WorkProgressBar.Location = new System.Drawing.Point(12, 46);
+            this.WorkProgressBar.Name = "WorkProgressBar";
+            this.WorkProgressBar.Size = new System.Drawing.Size(171, 23);
+            this.WorkProgressBar.TabIndex = 3;
+            // 
             // PopUpNoti
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.AutoSize = true;
             this.ClientSize = new System.Drawing.Size(188, 116);
+            this.Controls.Add(this.WorkProgressBar);
             this.Controls.Add(this.WorkCancelButton);
             this.Controls.Add(this.ConfirmationButton);
             this.Controls.Add(this.NotiTextLabel);
@@ -95,5 +104,6 @@
         private System.Windows.Forms.Label NotiTextLabel;
         private System.Windows.Forms.Button ConfirmationButton;
         private System.Windows.Forms.Button WorkCancelButton;
+        private System.Windows.Forms.ProgressBar WorkProgressBar;
     }
 }

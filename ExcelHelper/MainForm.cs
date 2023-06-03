@@ -23,19 +23,29 @@ namespace ExcelHelper
     public partial class ExcelHelperMain : Form
     {
         ExcelManager.ExcelManager ExcelManager = new ExcelManager.ExcelManager();
-        string utilPath = Application.StartupPath + "\\Util";
+        StreamManager.StreamManager StreamManager = new StreamManager.StreamManager();
         Utilities.Utilities utilities = new Utilities.Utilities();
+
+        Thread mainWork;
+
+        #region Path
+        public static string saveDataPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "\\ExcelHelper";
+        static string saveDictDataPath = saveDataPath + "\\dictdata";
+        static string saveUtilPath = saveDataPath + "\\util";
+        #endregion
 
         public ExcelHelperMain()
         {
             InitializeComponent();
 
-            if (!Directory.Exists(utilPath) ) { Directory.CreateDirectory(utilPath); }
+            if (!Directory.Exists(saveDataPath)) { Directory.CreateDirectory(saveDataPath); }
+            if (!Directory.Exists(saveDictDataPath)) { Directory.CreateDirectory(saveDictDataPath); }
+            if (!Directory.Exists(saveUtilPath) ) { Directory.CreateDirectory(saveUtilPath); }
 
             // 기존 메모장 파일 있으면 -> 해당 파일 기반으로 Data 세팅
-            if (System.IO.File.Exists(utilPath + "\\DataDict.txt") && System.IO.File.Exists(utilPath + "\\FileDict.txt"))
+            if (System.IO.File.Exists(saveDictDataPath + "\\DataDict.txt") && System.IO.File.Exists(saveDictDataPath + "\\FileDict.txt"))
             {
-                ExcelManager.ReadFilesFromDictData(utilPath);
+                ExcelManager.ReadFilesFromDictData(saveDictDataPath);
             }
             else
             {
@@ -44,20 +54,20 @@ namespace ExcelHelper
                     + "(최초 1회 수행 필요: 확인된 테이블 정보 없음)";
             }
 
-            if(System.IO.File.Exists(utilPath + "\\TablePath.txt"))
+            if(System.IO.File.Exists(saveUtilPath + "\\TablePath.txt"))
             {
-                if(System.IO.File.ReadLines(utilPath + "\\TablePath.txt").ToList().Count > 0) // 파일 망가지는 경우 대비 (값 날아가는 경우만 대비. 값이 이상해지는 건 영향 없음)
+                if(System.IO.File.ReadLines(saveUtilPath + "\\TablePath.txt").ToList().Count > 0) // 파일 망가지는 경우 대비 (값 날아가는 경우만 대비. 값이 이상해지는 건 영향 없음)
                 {
-                    TablePathInputTextBox.Text = System.IO.File.ReadLines(utilPath + "\\TablePath.txt").ToList()[0];
+                    TablePathInputTextBox.Text = System.IO.File.ReadLines(saveUtilPath + "\\TablePath.txt").ToList()[0];
                 }
             }
 
-            if(System.IO.File.Exists(utilPath + "\\TableCount.txt"))
+            if(System.IO.File.Exists(saveUtilPath + "\\TableCount.txt"))
             {
                 if (TablePathInputTextBox.Text.Contains("GameDesign") && TablePathInputTextBox.Text.Contains("Table"))
                 {
                     // 저장돼 있던 테이블 개수와, 오픈 시점의 테이블 개수 비교
-                    if (!utilities.CompareTableCount(utilPath, Directory.GetFiles(TablePathInputTextBox.Text, "*.xlsx", SearchOption.AllDirectories).Length))
+                    if (!utilities.CompareTableCount(saveUtilPath, Directory.GetFiles(TablePathInputTextBox.Text, "*.xlsx", SearchOption.AllDirectories).Length))
                     {
                         PopUpNoti.PopUpNoti nonEqualBetweenSavedAndNowTableCount = new PopUpNoti.PopUpNoti(PopUpNoti.PopUpNoti.popupType.noti, "Warning!!", "마지막 \'테이블 확인\' 이후 테이블 개수에 변화가 생겼습니다.\n\'전체 테이블 확인\' 기능을 수행해주세요.");
                         nonEqualBetweenSavedAndNowTableCount.ShowDialog();
@@ -69,6 +79,7 @@ namespace ExcelHelper
                 // 파일 망가지면 흠... 못 잡아내는데...
             }
 
+            // Form 관련 초기화
             this.FormBorderStyle = FormBorderStyle.FixedSingle;
 
             MergedTablesFunctionTipLabel.Width = MergeTablesButton.Width;
@@ -78,23 +89,7 @@ namespace ExcelHelper
             TablePathInputTextBox.LostFocus += TablePathInputTextBox_LostFocus;
         }
 
-        // 이벤트 핸들
-
-        private void MergeTablesButton_Click(object sender, EventArgs e)
-        {
-            if(ExcelManager.GetAllRepresentDataList() != null)
-            {
-                MergeForm.MergeForm mergeForm = new MergeForm.MergeForm(this.ExcelManager);
-                mergeForm.ShowDialog();
-            }
-            else
-            {
-                // 테이블 정보가 없는 경우 -> 머지 불가
-                PopUpNoti.PopUpNoti noTableInfoNoti = new PopUpNoti.PopUpNoti(PopUpNoti.PopUpNoti.popupType.noti, "Warning!!", "테이블 정보가 없어, Merge 할 수 없습니다.\n'전체 테이블 확인'을 실행해주세요.");
-                noTableInfoNoti.ShowDialog();
-            }
-        }
-
+        #region Event
         private void UpdateTableDataButton_Click(object sender, EventArgs e)
         {
             if (!TablePathInputTextBox.Text.Contains("GameDesign") || !TablePathInputTextBox.Text.Contains("Table"))
@@ -108,9 +103,21 @@ namespace ExcelHelper
                 PopUpNoti.PopUpNoti askUpdate = new PopUpNoti.PopUpNoti(PopUpNoti.PopUpNoti.popupType.ask, "UpdateTable", "정말 전체 테이블 정보를 확인하시겠습니까?");
                 if (askUpdate.ShowDialog() == DialogResult.OK)
                 {
+                    // Read 실행
+                    mainWork = new Thread(RunExcelManagerReadFiles);
+                    mainWork.IsBackground = true;
+                    mainWork.Start();
+
+                    // 작업 안내
                     PopUpNoti.PopUpNoti workingNoti = new PopUpNoti.PopUpNoti(PopUpNoti.PopUpNoti.popupType.working, "작업 중입니다. '응답 없음'이 떠도 종료하지 말아주세요!", "작업 중입니다... 멈춘 게 아니니 종료하지 말아주세요!");
                     workingNoti.Show();
-                    ExcelManager.ReadFilesFromFullio(TablePathInputTextBox.Text, utilPath);
+                    workingNoti.ThreadStart();
+
+                    // Read End 대기
+                    mainWork.Join();
+
+                    // 작업 안내 종료
+                    workingNoti.ThreadEnd();
                     workingNoti.Close();
 
                     // Update 완료 노티
@@ -119,10 +126,14 @@ namespace ExcelHelper
 
                     UpdateTableDataButton.Text = "전체 테이블 확인";
 
-                    utilities.SaveTablePath(utilPath, TablePathInputTextBox.Text);
-                    utilities.SaveTablecount(utilPath, Directory.GetFiles(TablePathInputTextBox.Text, "*.xlsx", SearchOption.AllDirectories).Length);
+                    utilities.SaveTablePath(saveUtilPath, TablePathInputTextBox.Text);
+                    utilities.SaveTablecount(saveUtilPath, Directory.GetFiles(TablePathInputTextBox.Text, "*.xlsx", SearchOption.AllDirectories).Length);
                 }
             }
+        }
+        void RunExcelManagerReadFiles()
+        {
+            ExcelManager.ReadFilesFromFullio(TablePathInputTextBox.Text, saveDictDataPath);
         }
 
         private void TablePathInputTextBox_LostFocus(object sender, EventArgs e)
@@ -141,9 +152,26 @@ namespace ExcelHelper
             }
         }
 
+
+        private void MergeTablesButton_Click(object sender, EventArgs e)
+        {
+            if (ExcelManager.GetAllRepresentDataList() != null)
+            {
+                MergeForm.MergeForm mergeForm = new MergeForm.MergeForm(this.ExcelManager);
+                mergeForm.ShowDialog();
+            }
+            else
+            {
+                // 테이블 정보가 없는 경우 -> 머지 불가
+                PopUpNoti.PopUpNoti noTableInfoNoti = new PopUpNoti.PopUpNoti(PopUpNoti.PopUpNoti.popupType.noti, "Warning!!", "테이블 정보가 없어, Merge 할 수 없습니다.\n'전체 테이블 확인'을 실행해주세요.");
+                noTableInfoNoti.ShowDialog();
+            }
+        }
+
         private void ExcelHelperMain_Load(object sender, EventArgs e)
         {
 
         }
+        #endregion
     }
 }

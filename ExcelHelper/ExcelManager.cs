@@ -20,8 +20,8 @@ namespace ExcelManager
 {
     public class ExcelManager
     {
-        DataDictHandler dataDictHandler;
-        FileDictHandler fileDictHandler;
+        static DataDictHandler dataDictHandler;
+        static FileDictHandler fileDictHandler;
 
         #region Get Methods
         public List<string> GetAllRepresentDataList()
@@ -37,29 +37,44 @@ namespace ExcelManager
         {
             return dataDictHandler.DataDict[_data].files;
         }
+        public bool IsDataDictContain(string _data)
+        {
+            return dataDictHandler.IsDataContains(_data);
+        }
         #endregion
 
         #region Read Full Files
         // 루트 따라 파일 읽고, DataDict, FileDict 초기화
         public void ReadFilesFromFullio(string _rootPath, string _savePath)
         {
-
             dataDictHandler = new DataDictHandler();
             fileDictHandler = new FileDictHandler();
 
+            const string exceptionFilePrefix = "Merged_";
+            const string exceptionFileName_Replace = "Replace";
+            const string exceptionFileName_Override = "Override";
+            const string exceptionDir = "BotSetting";
+
             string[] files = Directory.GetFiles(_rootPath, "*.xlsx", SearchOption.AllDirectories);
+
+            FileStream stream = null;
 
             foreach (string file in files)
             {
-                const string exceptionFilePrefix = "Merged_";
-                const string exceptionDir = "BotSetting";
+                // 파일 이름, Dir 예외처리
                 if (file.Contains(exceptionFilePrefix))
+                    continue;
+                if (file.Contains(exceptionFileName_Replace))
+                    continue;
+                if (file.Contains(exceptionFileName_Override))
                     continue;
                 if (file.Contains(exceptionDir))
                     continue;
 
-                using (FileStream stream = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.Read))
+                try
                 {
+                    stream = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.Read);
+
                     using (SpreadsheetDocument workbook = SpreadsheetDocument.Open(stream, false))
                     {
                         string _fileFullName = stream.Name;
@@ -101,6 +116,19 @@ namespace ExcelManager
                             fileDictHandler.AddFile(_fileFullName, _sheetName, _columns);
                         }
                     }
+                }
+                catch(Exception e)
+                {
+                    using (var debugLogFile = System.IO.File.CreateText(_savePath + "\\" + "ReadDebugLog.txt"))
+                    {
+                        string tmpstr = "Error in <" + file + "> " + e.Message + "\n";
+
+                        debugLogFile.WriteLine(tmpstr);
+                    }
+                }
+                finally
+                {
+                    stream.Dispose();
                 }
             }
             
@@ -212,18 +240,18 @@ namespace ExcelManager
         // 최적화용... 전체 IO 내역 저장해두면 -> 다음엔 해당 파일만 읽어도 됨.
         void SaveDicts(string _rootPath)
         {
-            if (this.dataDictHandler != null)
+            if (dataDictHandler != null)
             {
                 using (var newSaveFile = System.IO.File.CreateText(_rootPath + "\\" + "DataDict.txt"))
                 {
                     string tmpstr = "";
 
-                    foreach (string e in this.dataDictHandler.DataDict.Keys)
+                    foreach (string e in dataDictHandler.DataDict.Keys)
                     {
                         tmpstr += "RepresentData>>" + e + "\n"
                             + "SheetList>>...";
 
-                        foreach (string d in this.dataDictHandler.DataDict[e].sheetList)
+                        foreach (string d in dataDictHandler.DataDict[e].sheetList)
                         {
                             tmpstr += d + "...";
                         }
@@ -231,7 +259,7 @@ namespace ExcelManager
                         tmpstr += "\n"
                             + "FileList>>...";
 
-                        foreach (string v in this.dataDictHandler.DataDict[e].files)
+                        foreach (string v in dataDictHandler.DataDict[e].files)
                         {
                             tmpstr += v + "...";
                         }
@@ -252,21 +280,21 @@ namespace ExcelManager
                 }
             }
 
-            if (this.fileDictHandler != null)
+            if (fileDictHandler != null)
             {
                 using (var newSaveFile = System.IO.File.CreateText(_rootPath + "\\" + "FileDict.txt"))
                 {
                     string tmpstr = "";
 
-                    foreach (string e in this.fileDictHandler.FileDict.Keys)
+                    foreach (string e in fileDictHandler.FileDict.Keys)
                     {
                         tmpstr += "File>>" + e + "\n";
 
-                        foreach (string v in this.fileDictHandler.FileDict[e].Keys)
+                        foreach (string v in fileDictHandler.FileDict[e].Keys)
                         {
                             tmpstr += "Sheet>>" + v + "\n"
                                 + "ColumnList>>...";
-                            foreach (string col in this.fileDictHandler.FileDict[e][v])
+                            foreach (string col in fileDictHandler.FileDict[e][v])
                             {
                                 tmpstr += col + "...";
                             }
@@ -293,13 +321,15 @@ namespace ExcelManager
         #region Merge
         public void Merge(string _rootPath, string _data)
         {
+            string mergedTablePath = _rootPath + "\\" + "Merged_" + _data + "_Table.xlsx";
+
             // 라이센스 에러
             ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
 
-            string mergedTablePath = _rootPath + "\\" + "Merged_" + _data + "_Table.xlsx";
-
             using (ExcelPackage mergedFile = new ExcelPackage(new FileInfo(mergedTablePath)))
             {
+                Dictionary<string, int> mergingRowIdxDict = new Dictionary<string, int>();
+
                 // 기존 MergedFile 처리
                 string referFile = "";
                 foreach (var sheet in dataDictHandler.DataDict[_data].sheetList)
@@ -329,20 +359,22 @@ namespace ExcelManager
                     }
 
                     InitSheet(mergedFile.Workbook.Worksheets[sheet], fileDictHandler.FileDict[referFile][sheet]);
+                    mergingRowIdxDict.Add(sheet, 6);
                 }
                 // 저장해줘야 이후 Dimension을 정상적으로 체크 가능
                 mergedFile.Save();
 
-
+                ExcelPackage sourceFile = null;
+                ExcelWorksheet mergingSheet = null;
+                int _sourceRow, _sourceCol;
                 // Merge
                 foreach (string sourceFilePath in dataDictHandler.DataDict[_data].files)
                 {
-                    using (var sourceFile = new ExcelPackage(new FileInfo(sourceFilePath)))
+                    try
                     {
-                        int _mergingRowIdxInMergedFile;
-                        ExcelWorksheet mergingSheet;
+                        sourceFile = new ExcelPackage(new FileInfo(sourceFilePath));
 
-                        // 소스 파일의 시트를 순회하며 -> B6부터 Row를 한 칸씩 내려가고, DimensionColumn (데이터 있는 컬럼 개수) 개만큼 MergedFile에 복붙
+                        // 소스 파일의 시트를 순회하며 -> B6부터 Row를 한 칸씩 내려가며 MergedFile에 복붙
                         foreach (var sourceSheet in sourceFile.Workbook.Worksheets)
                         {
                             // "."으로 시작하는 시트는 Merge하지 않음
@@ -351,173 +383,50 @@ namespace ExcelManager
 
                             mergingSheet = mergedFile.Workbook.Worksheets[sourceSheet.Name];
 
-                            _mergingRowIdxInMergedFile = mergingSheet.Dimension.End.Row + 1;
-
-                            for (int _sourceRow = 6; _sourceRow <= sourceSheet.Dimension.End.Row; _sourceRow++)
+                            for (_sourceRow = 6; ; _sourceRow++)
                             {
-                                // 빈 셀인데 표서식은 존재하는 경우 -> Dimension은 존재하는 것으로 취급함
-                                // 복사할 row의 첫 행에 Value 없으면 -> 상기 케이스로 간주하여 복사하지 않고 다음 시트로 넘어감 (Cuid는 중간에 공란이 생길 수 없음)
                                 if (sourceSheet.Cells[_sourceRow, 2].Value == null || sourceSheet.Cells[_sourceRow, 2].Value.ToString() == "")
                                     break;
 
-
-                                // 데이터 복붙
-                                for (int _sourceCol = 2; _sourceCol <= sourceSheet.Dimension.End.Column; _sourceCol++)
+                                for (_sourceCol = 2; ; _sourceCol++)
                                 {
-                                    mergingSheet.Cells[_mergingRowIdxInMergedFile, _sourceCol].Value = sourceSheet.Cells[_sourceRow, _sourceCol].Value;
+                                    if (sourceSheet.Cells[5, _sourceCol].Value == null || sourceSheet.Cells[5, _sourceCol].Value.ToString() == "")
+                                        break;
+
+                                    mergingSheet.Cells[mergingRowIdxDict[sourceSheet.Name], _sourceCol].Value = sourceSheet.Cells[_sourceRow, _sourceCol].Value;
                                 }
-
-
-                                _mergingRowIdxInMergedFile++;
+                                mergingRowIdxDict[sourceSheet.Name]++;
                             }
                         }
-
-                        // Merge 파일 저장. 저장하면 자동 Close 됨
-                        mergedFile.Save();
                     }
-                }
-            }
-
-            #region Open XML 버전 (실패)
-            // MergedFile 열기
-            //SpreadsheetDocument mergeTargetFile = SpreadsheetDocument.Open(mergedTablePath, true);
-
-            //WorkbookPart mergedFileWorkbookPart = mergeTargetFile.WorkbookPart;
-            //WorksheetPart mergedFileWorksheetPart = mergedFileWorkbookPart.WorksheetParts.First();
-            //Sheets mergedFileSheets;
-            //Sheet mergedFileSheet;
-
-            //if (!System.IO.File.Exists(mergedTablePath))
-            //{
-            //    using (SpreadsheetDocument mergeTargetFile = SpreadsheetDocument.Create(mergedTablePath, SpreadsheetDocumentType.Workbook))
-            //    {
-            //        WorkbookPart mergedWorkbookPart = mergeTargetFile.AddWorkbookPart();
-            //        mergedWorkbookPart.Workbook = new Workbook();
-
-            //        WorksheetPart mergedWorksheetPart = mergedWorkbookPart.AddNewPart<WorksheetPart>();
-            //        mergedWorksheetPart.Worksheet = new Worksheet(new SheetData());
-
-            //        Sheets mergedSheets = mergeTargetFile.WorkbookPart.Workbook.AppendChild<Sheets>(new Sheets());
-            //        Sheet mergedSheet;
-
-            //        foreach (var sheet in dataDictHandler.DataDict[_data].sheetList)
-            //        {
-            //            mergedSheet = new Sheet() { Id = mergeTargetFile.WorkbookPart.GetIdOfPart(mergedWorksheetPart), Name = sheet };
-            //            mergedSheets.Append(mergedSheet);
-
-            //            using (SpreadsheetDocument sourceWorkbook = SpreadsheetDocument.Open(dataDictHandler.DataDict[_data].files[0], false))
-            //            {
-            //                Worksheet sourceWorksheet = sourceWorkbook.WorkbookPart.WorksheetParts.First(wp => wp.Worksheet.LocalName == sheet).Worksheet;
-            //                Row sourceRow = sourceWorksheet.GetFirstChild<SheetData>().Elements<Row>().FirstOrDefault(r => r.RowIndex == 5);
-            //                Row destinationRow = mergedSheet.GetFirstChild<SheetData>().Elements<Row>().FirstOrDefault(r => r.RowIndex == 5);
-
-            //                if (sourceRow == null)
-            //                {
-            //                    // Exit if either row does not exist
-            //                    return;
-            //                }
-
-            //                Row newRow = (Row)sourceRow.CloneNode(true);
-            //                newRow.RowIndex = 5;
-
-            //                foreach (Cell cell in newRow.Elements<Cell>())
-            //                {
-            //                    string cellReference = cell.CellReference.Value;
-            //                    cell.CellReference = new StringValue(cellReference);
-            //                }
-
-            //                // Insert the new row into the destination worksheet
-            //                mergedSheet.GetFirstChild<SheetData>().InsertBefore(newRow, destinationRow);
-            //            }
-            //        }
-            //    }
-            //}
-
-            //string referFile = "";
-            //foreach (var sheet in dataDictHandler.DataDict[_data].sheetList)
-            //{
-            //    foreach (var file in dataDictHandler.DataDict[_data].files)
-            //    {
-            //        if (fileDictHandler.FileDict[file].Keys.Contains(sheet))
-            //        {
-            //            referFile = file;
-
-            //            CopyRow(referFile, sheet, 6, mergedTablePath, sheet, GetRowCount(mergedTablePath, sheet) + 1, GetRowCount(referFile, sheet));
-
-            //            //break;
-            //        }
-            //    }
-            //}
-
-            #endregion
-        }
-        #region Open XML 버전에 쓰는 함수들
-        /*
-        public void CopyRow(string sourceFilePath, string sourceSheetName, uint sourceRowIndex, string destinationFilePath, string destinationSheetName, uint destinationRowIndex, uint numberOfRows)
-        {
-            // Open the source workbook and worksheet
-            using (SpreadsheetDocument sourceWorkbook = SpreadsheetDocument.Open(sourceFilePath, true))
-            {
-                Worksheet sourceWorksheet = sourceWorkbook.WorkbookPart.WorksheetParts.First(wp => wp.Worksheet.LocalName == sourceSheetName).Worksheet;
-
-                // Open the destination workbook and worksheet
-                using (SpreadsheetDocument destinationWorkbook = SpreadsheetDocument.Open(destinationFilePath, true))
-                {
-                    Worksheet destinationWorksheet = destinationWorkbook.WorkbookPart.WorksheetParts.First(wp => wp.Worksheet.LocalName == destinationSheetName).Worksheet;
-
-                    // Get the source and destination rows
-                    Row sourceRow = sourceWorksheet.GetFirstChild<SheetData>().Elements<Row>().FirstOrDefault(r => r.RowIndex == sourceRowIndex);
-                    Row destinationRow = destinationWorksheet.GetFirstChild<SheetData>().Elements<Row>().FirstOrDefault(r => r.RowIndex == destinationRowIndex);
-
-                    if (sourceRow == null || destinationRow == null)
+                    catch(Exception e)
                     {
-                        // Exit if either row does not exist
-                        return;
-                    }
-
-                    // Copy the source row to the destination row
-                    for (uint i = 0; i < numberOfRows; i++)
-                    {
-                        Row newRow = (Row)sourceRow.CloneNode(true);
-                        newRow.RowIndex = destinationRowIndex + i;
-
-                        // Adjust the cell references in the new row
-                        foreach (Cell cell in newRow.Elements<Cell>())
+                        using (var debugLogFile = System.IO.File.CreateText(_rootPath + "\\" + "MergeDebugLog.txt"))
                         {
-                            string cellReference = cell.CellReference.Value;
-                            cell.CellReference = new StringValue(cellReference.Replace(sourceRowIndex.ToString(), (destinationRowIndex + i).ToString()));
+                            string tmpstr = "Error in <" + sourceFile + "> " + e.Message + "\n";
+
+                            debugLogFile.WriteLine(tmpstr);
                         }
-
-                        // Insert the new row into the destination worksheet
-                        destinationWorksheet.GetFirstChild<SheetData>().InsertBefore(newRow, destinationRow);
-
-                        // Increment the destination row index
-                        destinationRowIndex++;
                     }
+                    finally
+                    {
+                        sourceFile.Dispose();
+                    }
+                }
 
-                    // Save the changes to the destination workbook
-                    destinationWorkbook.WorkbookPart.Workbook.Save();
-                }
-            }
-        }
-        public uint GetRowCount(string filePath, string sheetName)
-        {
-            uint rowCount = 0;
-            using (SpreadsheetDocument document = SpreadsheetDocument.Open(filePath, false))
-            {
-                WorkbookPart workbookPart = document.WorkbookPart;
-                Sheet sheet = workbookPart.Workbook.Descendants<Sheet>().FirstOrDefault(s => s.Name == sheetName);
-                if (sheet != null)
+                foreach(var sheet in mergedFile.Workbook.Worksheets)
                 {
-                    WorksheetPart worksheetPart = (WorksheetPart)workbookPart.GetPartById(sheet.Id);
-                    SheetData sheetData = worksheetPart.Worksheet.Elements<SheetData>().First();
-                    rowCount = (uint)sheetData.Elements<Row>().Count();
+                    int _col;
+                    for(_col = 2; ; _col++)
+                    {
+                        if (sheet.Cells[5, _col].Value == null || sheet.Cells[5, _col].Value.ToString() == "")
+                            break;
+                    }
+                    sheet.Cells[5, 2, 6, _col].AutoFitColumns();
                 }
+                mergedFile.Save();
             }
-            return rowCount;
         }
-        */
-        #endregion
 
         void InitSheet(ExcelWorksheet _mergeSheet, List<string> _sourceColumns)
         {
@@ -546,7 +455,6 @@ namespace ExcelManager
         {
             string cellValue = _cell.InnerText;
 
-            // 이게 뭐지..? 왜 되지...?
             if (_cell.DataType != null)
             {
                 switch (_cell.DataType.Value)

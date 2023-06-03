@@ -35,6 +35,7 @@
             this.TablePathLabel = new System.Windows.Forms.Label();
             this.MergedTablesFunctionTipLabel = new System.Windows.Forms.Label();
             this.AdditionalFunctionLineLabel = new System.Windows.Forms.Label();
+            this.SaveNotiLabel = new System.Windows.Forms.Label();
             this.SuspendLayout();
             // 
             // UpdateTableDataButton
@@ -49,7 +50,7 @@
             // 
             // MergeTablesButton
             // 
-            this.MergeTablesButton.Location = new System.Drawing.Point(28, 165);
+            this.MergeTablesButton.Location = new System.Drawing.Point(28, 176);
             this.MergeTablesButton.Name = "MergeTablesButton";
             this.MergeTablesButton.Size = new System.Drawing.Size(185, 59);
             this.MergeTablesButton.TabIndex = 4;
@@ -64,9 +65,10 @@
             this.UpdataTableDataLabel.ForeColor = System.Drawing.Color.Red;
             this.UpdataTableDataLabel.Location = new System.Drawing.Point(204, 102);
             this.UpdataTableDataLabel.Name = "UpdataTableDataLabel";
-            this.UpdataTableDataLabel.Size = new System.Drawing.Size(275, 22);
+            this.UpdataTableDataLabel.Size = new System.Drawing.Size(275, 33);
             this.UpdataTableDataLabel.TabIndex = 5;
-            this.UpdataTableDataLabel.Text = "※ Table이나 시트, 컬럼 추가 시 1회 수행해야 합니다\r\n안 그러면 프로그램이 터져요...";
+            this.UpdataTableDataLabel.Text = "※ Table이나 시트, 컬럼 추가 시 1회 수행해야 합니다\r\n안 그러면 프로그램이 터져요...\r\n※ ErDesignDataValidator 정도" +
+    " 시간이 소요됩니다.";
             this.UpdataTableDataLabel.TextAlign = System.Drawing.ContentAlignment.TopRight;
             // 
             // TablePathInputTextBox
@@ -90,7 +92,7 @@
             // MergedTablesFunctionTipLabel
             // 
             this.MergedTablesFunctionTipLabel.AutoSize = true;
-            this.MergedTablesFunctionTipLabel.Location = new System.Drawing.Point(26, 227);
+            this.MergedTablesFunctionTipLabel.Location = new System.Drawing.Point(35, 238);
             this.MergedTablesFunctionTipLabel.Name = "MergedTablesFunctionTipLabel";
             this.MergedTablesFunctionTipLabel.Size = new System.Drawing.Size(173, 12);
             this.MergedTablesFunctionTipLabel.TabIndex = 8;
@@ -100,17 +102,30 @@
             // AdditionalFunctionLineLabel
             // 
             this.AdditionalFunctionLineLabel.AutoSize = true;
-            this.AdditionalFunctionLineLabel.Location = new System.Drawing.Point(26, 138);
+            this.AdditionalFunctionLineLabel.Location = new System.Drawing.Point(23, 152);
             this.AdditionalFunctionLineLabel.Name = "AdditionalFunctionLineLabel";
-            this.AdditionalFunctionLineLabel.Size = new System.Drawing.Size(453, 12);
+            this.AdditionalFunctionLineLabel.Size = new System.Drawing.Size(461, 12);
             this.AdditionalFunctionLineLabel.TabIndex = 9;
-            this.AdditionalFunctionLineLabel.Text = "---------------------------------추가 기능---------------------------------";
+            this.AdditionalFunctionLineLabel.Text = "------------------------------------기능------------------------------------";
+            // 
+            // SaveNotiLabel
+            // 
+            this.SaveNotiLabel.AutoSize = true;
+            this.SaveNotiLabel.Font = new System.Drawing.Font("굴림", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.SaveNotiLabel.ImageAlign = System.Drawing.ContentAlignment.MiddleRight;
+            this.SaveNotiLabel.Location = new System.Drawing.Point(247, 375);
+            this.SaveNotiLabel.Name = "SaveNotiLabel";
+            this.SaveNotiLabel.Size = new System.Drawing.Size(232, 11);
+            this.SaveNotiLabel.TabIndex = 10;
+            this.SaveNotiLabel.Text = "관련한 모든 데이터는 \'내 문서\'에 저장됩니다.";
+            this.SaveNotiLabel.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
             // 
             // ExcelHelperMain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(522, 386);
+            this.ClientSize = new System.Drawing.Size(511, 395);
+            this.Controls.Add(this.SaveNotiLabel);
             this.Controls.Add(this.AdditionalFunctionLineLabel);
             this.Controls.Add(this.MergedTablesFunctionTipLabel);
             this.Controls.Add(this.TablePathLabel);
@@ -135,6 +150,7 @@
         private System.Windows.Forms.Label TablePathLabel;
         private System.Windows.Forms.Label MergedTablesFunctionTipLabel;
         private System.Windows.Forms.Label AdditionalFunctionLineLabel;
+        private System.Windows.Forms.Label SaveNotiLabel;
     }
 }
 

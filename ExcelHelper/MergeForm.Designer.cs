@@ -107,7 +107,6 @@
             this.Controls.Add(this.DataListLabel);
             this.Controls.Add(this.DataListBox);
             this.MaximizeBox = false;
-            this.MinimizeBox = false;
             this.Name = "MergeForm";
             this.ShowIcon = false;
             this.Text = "Merge";
