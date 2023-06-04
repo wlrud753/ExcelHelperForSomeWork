@@ -388,6 +388,7 @@ namespace ExcelManager
                                 if (sourceSheet.Cells[_sourceRow, 2].Value == null || sourceSheet.Cells[_sourceRow, 2].Value.ToString() == "")
                                     break;
 
+
                                 for (_sourceCol = 2; ; _sourceCol++)
                                 {
                                     if (sourceSheet.Cells[5, _sourceCol].Value == null || sourceSheet.Cells[5, _sourceCol].Value.ToString() == "")
@@ -395,6 +396,9 @@ namespace ExcelManager
 
                                     mergingSheet.Cells[mergingRowIdxDict[sourceSheet.Name], _sourceCol].Value = sourceSheet.Cells[_sourceRow, _sourceCol].Value;
                                 }
+                                // 1열에 해당 데이터가 포함된 파일 이름 추가
+                                mergingSheet.Cells[mergingRowIdxDict[sourceSheet.Name], 1].Value = Path.GetFileName(sourceFilePath);
+
                                 mergingRowIdxDict[sourceSheet.Name]++;
                             }
                         }

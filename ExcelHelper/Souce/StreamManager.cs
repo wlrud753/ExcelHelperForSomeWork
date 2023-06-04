@@ -7,24 +7,12 @@ namespace StreamManager
     public class StreamManager
     {
         static string saveStreamPath = ExcelHelper.ExcelHelperMain.saveDataPath + "\\StreamPath.txt";
-        static List<string[]> streamPath;
+        static List<string[]> streamPathList;
 
         public List<string[]> GetStreamData()
         {
-            //첨에 Stream을 정해야겠죵
-
-            //테이블 확인 > 관련 Form 뜨게? >> Stream 마다 일치/ 불일치 여부 알려주기...
-
-            // StreamPath.txt 파일 없으면 > 스트림 설정 안 된 것으로 간주 / 실수로 삭제했더라도, 무결성 깨진 것으로 간주
-
-            /*
-             * StreamPath 양식
-             * Dev: C\~~
-             * Stable: C\~~
-             * 요런 식으로 구성...
-             */
-
             string[] splitStr = new string[] { ": " };
+            streamPathList = new List<string[]>();
 
             foreach (var line in System.IO.File.ReadLines(saveStreamPath, Encoding.UTF8))
             {
@@ -36,20 +24,24 @@ namespace StreamManager
                 streamPathData[0] = line.Split(splitStr, StringSplitOptions.RemoveEmptyEntries)[0];
                 streamPathData[1] = line.Split(splitStr, StringSplitOptions.RemoveEmptyEntries)[1];
 
-                streamPath.Add(streamPathData);
+                streamPathList.Add(streamPathData);
 
                 streamPathData = null;
             }
 
-            return streamPath;
+            return streamPathList;
+        }
+        public List<string[]> GetStreamPathList()
+        {
+            return streamPathList;
         }
 
         public string GetStreamTablePath(string _stream)
         {
-            if(streamPath == null)
+            if(streamPathList == null)
                 return null;
 
-            string tmpStr = streamPath.Find(s => s[0].Equals(_stream))[1];
+            string tmpStr = streamPathList.Find(s => s[0].Equals(_stream))[1];
 
             if(!tmpStr.Contains("GameDesign") || !tmpStr.Contains("Table"))
                 return null;
@@ -59,6 +51,8 @@ namespace StreamManager
 
         public void SaveStreamData(List<string[]> _streamPath)
         {
+            streamPathList = _streamPath;
+
             using (var newSaveFile = System.IO.File.CreateText(saveStreamPath))
             {
                 string tmpStr = "";
@@ -78,5 +72,8 @@ namespace StreamManager
                 return true;
             return false;
         }
+
+        // 관련 없는 폴더 지우는 건 > 수동으로 폴더만 지우는 게 깔끔할 듯...
+        // 중간에 Stream 이름이 수정될 수도 있고 하니까... 이런 경우에는 수동으로 폴더 명만 바꿔주거나 해야 함
     }
 }

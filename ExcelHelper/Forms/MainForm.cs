@@ -41,10 +41,7 @@ namespace ExcelHelper
                         workingStream = stream[0];
                     }
 
-                    SetStreamSavePath(stream[0]);
-
-                    if (!Directory.Exists(saveDictDataPath)) { Directory.CreateDirectory(saveDictDataPath); }
-                    if (!Directory.Exists(saveUtilPath)) { Directory.CreateDirectory(saveUtilPath); }
+                    MakeStreamDir(stream[0]);
 
                     SelectStreamComboBox.Items.Add(stream[0]);
                 }
@@ -127,6 +124,15 @@ namespace ExcelHelper
                 return;
             }
 
+            // workingStream 데이터가 변경돼도 → ExcelManager는 그대로 가서,, 빈 스트림의 경우 이전 스트림 데이터가 그대로 남아 있음.
+            // DictData가 정상적으로 들어 있는지 확인 -> DictData 내부의 파일이 손상되는 경우는 체크하지 않음 (수동으로 파일을 수정하는 경우는... 업보를 맞이하게 됨)
+            if(System.IO.Directory.GetFiles(saveDictDataPath) == null || System.IO.Directory.GetFiles(saveDictDataPath).Length < 2)
+            {
+                PopUpNoti.PopUpNoti noTableInfoNoti = new PopUpNoti.PopUpNoti(PopUpNoti.PopUpNoti.popupType.noti, "Warning!!", "테이블 정보가 없어, Merge 할 수 없습니다.\n'전체 테이블 확인'을 실행해주세요.");
+                noTableInfoNoti.ShowDialog();
+                return;
+            }
+
             if (ExcelManager.GetAllRepresentDataList() != null)
             {
                 MergeForm.MergeForm mergeForm = new MergeForm.MergeForm(this.ExcelManager);
@@ -146,6 +152,38 @@ namespace ExcelHelper
         }
         #endregion
 
+        private void SelectStreamComboBox_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            ComboBox cb = (ComboBox)sender;
+            if (cb.SelectedIndex >= 0)
+            {
+                workingStream = cb.SelectedItem as string;
+
+                GetStreamData(workingStream);
+            }
+        }
+        
+        private void SetStreamOptionButton_Click(object sender, EventArgs e)
+        {
+            StreamManagingForm.StreamManagingForm streamManagingForm = new StreamManagingForm.StreamManagingForm();
+            streamManagingForm.saveDataSend += new StreamManagingForm.StreamManagingForm.saveDataSendDelegate(UpdateSelectStreamComboBox);
+            streamManagingForm.ShowDialog();
+        }
+        void UpdateSelectStreamComboBox()
+        {
+            SelectStreamComboBox.Items.Clear();
+
+            foreach(var streamName in StreamManager.GetStreamPathList())
+            {
+                SelectStreamComboBox.Items.Add(streamName[0]);
+                MakeStreamDir(streamName[0]);
+            }
+
+            // MakeStreamDir에서 SavePath들이 전부 변경됐었기에, 지금 선택한 stream으로 SavePath 다시 변경
+            SetStreamSavePath(workingStream);
+        }
+
+        #region Utils
         void SetStreamSavePath(string _stream)
         {
             saveDictDataPath = saveDataPath + "\\" + _stream + "\\dictData";
@@ -183,26 +221,20 @@ namespace ExcelHelper
                         UpdateTableDataButton.Text = "전체 테이블 확인\n"
                         + "(수행 필요: 테이블 개수에 변동 발생)";
                     }
+                    else // 저장된 테이블 개수 == 오픈 시점 테이블 개수
+                    {
+                        UpdateTableDataButton.Text = "전체 테이블 확인";
+                    }
                 }
                 // 파일 망가지면 흠... 못 잡아내는데...
             }
         }
-
-        private void SelectStreamComboBox_SelectedIndexChanged(object sender, EventArgs e)
+        void MakeStreamDir(string _stream)
         {
-            ComboBox cb = (ComboBox)sender;
-            if (cb.SelectedIndex >= 0)
-            {
-                workingStream = cb.SelectedItem as string;
-
-                GetStreamData(workingStream);
-            }
+            SetStreamSavePath(_stream);
+            if (!Directory.Exists(saveDictDataPath)) { Directory.CreateDirectory(saveDictDataPath); }
+            if (!Directory.Exists(saveUtilPath)) { Directory.CreateDirectory(saveUtilPath); }
         }
-
-        private void SetStreamOptionButton_Click(object sender, EventArgs e)
-        {
-            StreamManagingForm.StreamManagingForm streamManagingForm = new StreamManagingForm.StreamManagingForm();
-            streamManagingForm.ShowDialog();
-        }
+        #endregion
     }
 }
