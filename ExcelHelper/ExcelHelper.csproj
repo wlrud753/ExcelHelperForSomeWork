@@ -113,10 +113,10 @@
     <Compile Include="Forms\StreamManagingForm.Designer.cs">
       <DependentUpon>StreamManagingForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="Souce\StreamManager.cs" />
-    <Compile Include="Souce\QuestManager.cs" />
-    <Compile Include="Souce\DataHandler.cs" />
-    <Compile Include="Souce\ExcelManager.cs" />
+    <Compile Include="Source\StreamManager.cs" />
+    <Compile Include="Source\QuestManager.cs" />
+    <Compile Include="Source\DataHandler.cs" />
+    <Compile Include="Source\ExcelManager.cs" />
     <Compile Include="Forms\PopUpNoti.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -135,9 +135,9 @@
     <Compile Include="Forms\MergeForm.Designer.cs">
       <DependentUpon>MergeForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="Souce\Program.cs" />
+    <Compile Include="Source\Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Souce\Utilities.cs" />
+    <Compile Include="Source\Utilities.cs" />
     <EmbeddedResource Include="Forms\MainForm.resx">
       <DependentUpon>MainForm.cs</DependentUpon>
     </EmbeddedResource>
