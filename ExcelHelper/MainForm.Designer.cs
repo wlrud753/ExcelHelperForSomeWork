@@ -31,16 +31,17 @@
             this.UpdateTableDataButton = new System.Windows.Forms.Button();
             this.MergeTablesButton = new System.Windows.Forms.Button();
             this.UpdataTableDataLabel = new System.Windows.Forms.Label();
-            this.TablePathInputTextBox = new System.Windows.Forms.TextBox();
-            this.TablePathLabel = new System.Windows.Forms.Label();
+            this.StreamSelectLabel = new System.Windows.Forms.Label();
             this.MergedTablesFunctionTipLabel = new System.Windows.Forms.Label();
             this.AdditionalFunctionLineLabel = new System.Windows.Forms.Label();
             this.SaveNotiLabel = new System.Windows.Forms.Label();
+            this.SelectStreamComboBox = new System.Windows.Forms.ComboBox();
+            this.SetStreamOptionButton = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // UpdateTableDataButton
             // 
-            this.UpdateTableDataButton.Location = new System.Drawing.Point(28, 12);
+            this.UpdateTableDataButton.Location = new System.Drawing.Point(26, 47);
             this.UpdateTableDataButton.Name = "UpdateTableDataButton";
             this.UpdateTableDataButton.Size = new System.Drawing.Size(453, 56);
             this.UpdateTableDataButton.TabIndex = 3;
@@ -63,7 +64,7 @@
             this.UpdataTableDataLabel.AutoSize = true;
             this.UpdataTableDataLabel.Font = new System.Drawing.Font("굴림", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
             this.UpdataTableDataLabel.ForeColor = System.Drawing.Color.Red;
-            this.UpdataTableDataLabel.Location = new System.Drawing.Point(204, 102);
+            this.UpdataTableDataLabel.Location = new System.Drawing.Point(204, 106);
             this.UpdataTableDataLabel.Name = "UpdataTableDataLabel";
             this.UpdataTableDataLabel.Size = new System.Drawing.Size(275, 33);
             this.UpdataTableDataLabel.TabIndex = 5;
@@ -71,23 +72,14 @@
     " 시간이 소요됩니다.";
             this.UpdataTableDataLabel.TextAlign = System.Drawing.ContentAlignment.TopRight;
             // 
-            // TablePathInputTextBox
+            // StreamSelectLabel
             // 
-            this.TablePathInputTextBox.Font = new System.Drawing.Font("굴림", 9F, System.Drawing.FontStyle.Italic, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.TablePathInputTextBox.Location = new System.Drawing.Point(97, 78);
-            this.TablePathInputTextBox.Name = "TablePathInputTextBox";
-            this.TablePathInputTextBox.Size = new System.Drawing.Size(384, 21);
-            this.TablePathInputTextBox.TabIndex = 6;
-            this.TablePathInputTextBox.Text = "테이블 경로를 입력해주세요";
-            // 
-            // TablePathLabel
-            // 
-            this.TablePathLabel.AutoSize = true;
-            this.TablePathLabel.Location = new System.Drawing.Point(26, 81);
-            this.TablePathLabel.Name = "TablePathLabel";
-            this.TablePathLabel.Size = new System.Drawing.Size(65, 12);
-            this.TablePathLabel.TabIndex = 7;
-            this.TablePathLabel.Text = "Table 경로";
+            this.StreamSelectLabel.AutoSize = true;
+            this.StreamSelectLabel.Location = new System.Drawing.Point(28, 24);
+            this.StreamSelectLabel.Name = "StreamSelectLabel";
+            this.StreamSelectLabel.Size = new System.Drawing.Size(53, 12);
+            this.StreamSelectLabel.TabIndex = 7;
+            this.StreamSelectLabel.Text = "Stream: ";
             // 
             // MergedTablesFunctionTipLabel
             // 
@@ -120,16 +112,37 @@
             this.SaveNotiLabel.Text = "관련한 모든 데이터는 \'내 문서\'에 저장됩니다.";
             this.SaveNotiLabel.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
             // 
+            // SelectStreamComboBox
+            // 
+            this.SelectStreamComboBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.SelectStreamComboBox.FormattingEnabled = true;
+            this.SelectStreamComboBox.Location = new System.Drawing.Point(87, 19);
+            this.SelectStreamComboBox.Name = "SelectStreamComboBox";
+            this.SelectStreamComboBox.Size = new System.Drawing.Size(126, 20);
+            this.SelectStreamComboBox.TabIndex = 11;
+            this.SelectStreamComboBox.SelectedIndexChanged += new System.EventHandler(this.SelectStreamComboBox_SelectedIndexChanged);
+            // 
+            // SetStreamOptionButton
+            // 
+            this.SetStreamOptionButton.Location = new System.Drawing.Point(375, 19);
+            this.SetStreamOptionButton.Name = "SetStreamOptionButton";
+            this.SetStreamOptionButton.Size = new System.Drawing.Size(104, 23);
+            this.SetStreamOptionButton.TabIndex = 12;
+            this.SetStreamOptionButton.Text = "스트림 설정";
+            this.SetStreamOptionButton.UseVisualStyleBackColor = true;
+            this.SetStreamOptionButton.Click += new System.EventHandler(this.SetStreamOptionButton_Click);
+            // 
             // ExcelHelperMain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(511, 395);
+            this.Controls.Add(this.SetStreamOptionButton);
+            this.Controls.Add(this.SelectStreamComboBox);
             this.Controls.Add(this.SaveNotiLabel);
             this.Controls.Add(this.AdditionalFunctionLineLabel);
             this.Controls.Add(this.MergedTablesFunctionTipLabel);
-            this.Controls.Add(this.TablePathLabel);
-            this.Controls.Add(this.TablePathInputTextBox);
+            this.Controls.Add(this.StreamSelectLabel);
             this.Controls.Add(this.UpdataTableDataLabel);
             this.Controls.Add(this.MergeTablesButton);
             this.Controls.Add(this.UpdateTableDataButton);
@@ -146,11 +159,12 @@
         private System.Windows.Forms.Button UpdateTableDataButton;
         private System.Windows.Forms.Button MergeTablesButton;
         private System.Windows.Forms.Label UpdataTableDataLabel;
-        private System.Windows.Forms.TextBox TablePathInputTextBox;
-        private System.Windows.Forms.Label TablePathLabel;
+        private System.Windows.Forms.Label StreamSelectLabel;
         private System.Windows.Forms.Label MergedTablesFunctionTipLabel;
         private System.Windows.Forms.Label AdditionalFunctionLineLabel;
         private System.Windows.Forms.Label SaveNotiLabel;
+        private System.Windows.Forms.ComboBox SelectStreamComboBox;
+        private System.Windows.Forms.Button SetStreamOptionButton;
     }
 }
 

@@ -107,6 +107,12 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="StreamManagingForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="StreamManagingForm.Designer.cs">
+      <DependentUpon>StreamManagingForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="StreamManager.cs" />
     <Compile Include="QuestManager.cs" />
     <Compile Include="DataHandler.cs" />
@@ -150,6 +156,9 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+    <EmbeddedResource Include="StreamManagingForm.resx">
+      <DependentUpon>StreamManagingForm.cs</DependentUpon>
+    </EmbeddedResource>
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
