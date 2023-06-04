@@ -37,6 +37,7 @@
             this.SaveNotiLabel = new System.Windows.Forms.Label();
             this.SelectStreamComboBox = new System.Windows.Forms.ComboBox();
             this.SetStreamOptionButton = new System.Windows.Forms.Button();
+            this.QuestDataButton = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // UpdateTableDataButton
@@ -132,11 +133,21 @@
             this.SetStreamOptionButton.UseVisualStyleBackColor = true;
             this.SetStreamOptionButton.Click += new System.EventHandler(this.SetStreamOptionButton_Click);
             // 
+            // QuestDataButton
+            // 
+            this.QuestDataButton.Location = new System.Drawing.Point(294, 176);
+            this.QuestDataButton.Name = "QuestDataButton";
+            this.QuestDataButton.Size = new System.Drawing.Size(185, 59);
+            this.QuestDataButton.TabIndex = 13;
+            this.QuestDataButton.Text = "Quest";
+            this.QuestDataButton.UseVisualStyleBackColor = true;
+            // 
             // ExcelHelperMain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(511, 395);
+            this.Controls.Add(this.QuestDataButton);
             this.Controls.Add(this.SetStreamOptionButton);
             this.Controls.Add(this.SelectStreamComboBox);
             this.Controls.Add(this.SaveNotiLabel);
@@ -165,6 +176,7 @@
         private System.Windows.Forms.Label SaveNotiLabel;
         private System.Windows.Forms.ComboBox SelectStreamComboBox;
         private System.Windows.Forms.Button SetStreamOptionButton;
+        private System.Windows.Forms.Button QuestDataButton;
     }
 }
 

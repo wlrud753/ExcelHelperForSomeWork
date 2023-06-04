@@ -27,7 +27,7 @@ namespace ExcelManager
         public List<string> GetAllRepresentDataList()
         {
             if (dataDictHandler == null) { return null; }
-            return dataDictHandler.DataDict.Keys.ToList();
+            return DataDict.Keys.ToList();
         }
         public List<string> GetAllDividedData()
         {
@@ -35,7 +35,7 @@ namespace ExcelManager
         }
         public List<string> GetFilesInSpecificData(string _data)
         {
-            return dataDictHandler.DataDict[_data].files;
+            return DataDict[_data].files;
         }
         public bool IsDataDictContain(string _data)
         {
@@ -133,7 +133,7 @@ namespace ExcelManager
             }
             
             // Set Data Dict
-            dataDictHandler.SetData(fileDictHandler);
+            dataDictHandler.SetData();
 
             SaveDicts(_savePath);
         }
@@ -143,96 +143,8 @@ namespace ExcelManager
         // SaveDicts로 저장했던 데이터 내역 읽어오기
         public void ReadFilesFromDictData(string _rootPath)
         {
-            dataDictHandler = new DataDictHandler(ReadSavedDataDict(_rootPath));
-            fileDictHandler = new FileDictHandler(ReadSavedFileDict(_rootPath));
-        }
-        Dictionary<string, DataInfo> ReadSavedDataDict(string _rootPath)
-        {
-            string representData = "";
-            Dictionary<string, DataInfo> dataDict = new Dictionary<string, DataInfo>();
-            List<string> sheetList = new List<string>();
-            List<string> fileList = new List<string>();
-            string[] splitStr = new string[] { "..." };
-            foreach (var line in System.IO.File.ReadLines(_rootPath + "\\" + "DataDict.txt", Encoding.UTF8))
-            {
-                if (line.Contains("Next..."))
-                {
-                    DataInfo dataInfo = new DataInfo(sheetList, fileList);
-                    dataDict.Add(representData, dataInfo);
-                    continue;
-                }
-
-                if (line.Contains("RepresentData>>"))
-                {
-                    representData = line.Split(new string[] {">>"}, StringSplitOptions.RemoveEmptyEntries)[1];
-                }
-                if (line.Contains("SheetList>>"))
-                {
-                    sheetList = new List<string>();
-                    foreach (var sheet in line.Split(splitStr, StringSplitOptions.RemoveEmptyEntries))
-                    {
-                        if (sheet.Contains("SheetList>>"))
-                            continue;
-
-                        sheetList.Add(sheet);
-                    }
-                }
-                if (line.Contains("FileList>>"))
-                {
-                    fileList = new List<string>();
-                    foreach (var file in line.Split(splitStr, StringSplitOptions.RemoveEmptyEntries))
-                    {
-                        if (file.Contains("FileList>>"))
-                            continue;
-
-                        fileList.Add(file);
-                    }
-                }
-            }
-
-            return dataDict;
-        }
-        Dictionary<string, Dictionary<string, List<string>>> ReadSavedFileDict(string _rootPath)
-        {
-            string file = "";
-            Dictionary<string, Dictionary<string, List<string>>> fileDict = new Dictionary<string, Dictionary<string, List<string>>>();
-            string sheet = "";
-            Dictionary<string, List<string>> sheetDict = new Dictionary<string, List<string>>();
-            List<string> columnList = new List<string>();
-            string[] splitStr = new string[] { "..." };
-            foreach (var line in System.IO.File.ReadLines(_rootPath + "\\" + "FileDict.txt", Encoding.UTF8))
-            {
-                if (line.Contains("Next..."))
-                {
-                    fileDict.Add(file, sheetDict);
-                    continue;
-                }
-
-                if (line.Contains("File>>"))
-                {
-                    file = line.Split(new string[] { ">>" }, StringSplitOptions.RemoveEmptyEntries)[1];
-                    sheetDict = new Dictionary<string, List<string>>();
-                }
-                if (line.Contains("Sheet>>"))
-                {
-                    sheet = line.Split(new string[] { ">>" }, StringSplitOptions.RemoveEmptyEntries)[1];
-                }
-                if (line.Contains("ColumnList>>"))
-                {
-                    columnList = new List<string>();
-                    foreach (var column in line.Split(splitStr, StringSplitOptions.RemoveEmptyEntries))
-                    {
-                        if (column.Contains("ColumnList>>"))
-                            continue;
-
-                        columnList.Add(column);
-                    }
-
-                    sheetDict.Add(sheet, columnList);
-                }
-            }
-
-            return fileDict;
+            dataDictHandler = new DataDictHandler(_rootPath);
+            fileDictHandler = new FileDictHandler(_rootPath);
         }
         #endregion
 
@@ -242,35 +154,7 @@ namespace ExcelManager
         {
             if (dataDictHandler != null)
             {
-                using (var newSaveFile = System.IO.File.CreateText(_rootPath + "\\" + "DataDict.txt"))
-                {
-                    string tmpstr = "";
-
-                    foreach (string e in dataDictHandler.DataDict.Keys)
-                    {
-                        tmpstr += "RepresentData>>" + e + "\n"
-                            + "SheetList>>...";
-
-                        foreach (string d in dataDictHandler.DataDict[e].sheetList)
-                        {
-                            tmpstr += d + "...";
-                        }
-
-                        tmpstr += "\n"
-                            + "FileList>>...";
-
-                        foreach (string v in dataDictHandler.DataDict[e].files)
-                        {
-                            tmpstr += v + "...";
-                        }
-
-                        tmpstr += "\nNext...\n";
-                    }
-
-                    newSaveFile.Write(tmpstr);
-
-                    newSaveFile.Close();
-                }
+                DataDictHandler.SaveDataDict(_rootPath);
             }
             else
             {
@@ -282,31 +166,7 @@ namespace ExcelManager
 
             if (fileDictHandler != null)
             {
-                using (var newSaveFile = System.IO.File.CreateText(_rootPath + "\\" + "FileDict.txt"))
-                {
-                    string tmpstr = "";
-
-                    foreach (string e in fileDictHandler.FileDict.Keys)
-                    {
-                        tmpstr += "File>>" + e + "\n";
-
-                        foreach (string v in fileDictHandler.FileDict[e].Keys)
-                        {
-                            tmpstr += "Sheet>>" + v + "\n"
-                                + "ColumnList>>...";
-                            foreach (string col in fileDictHandler.FileDict[e][v])
-                            {
-                                tmpstr += col + "...";
-                            }
-                            tmpstr += "\n";
-                        }
-                        tmpstr += "\nNext...\n";
-                    }
-
-                    newSaveFile.Write(tmpstr);
-
-                    newSaveFile.Close();
-                }
+                FileDictHandler.SaveFileDict(_rootPath);                
             }
             else
             {
@@ -332,11 +192,11 @@ namespace ExcelManager
 
                 // 기존 MergedFile 처리
                 string referFile = "";
-                foreach (var sheet in dataDictHandler.DataDict[_data].sheetList)
+                foreach (var sheet in DataDictHandler.DataDict[_data].sheetList)
                 {
-                    foreach (var file in dataDictHandler.DataDict[_data].files)
+                    foreach (var file in DataDictHandler.DataDict[_data].files)
                     {
-                        if (fileDictHandler.FileDict[file].Keys.Contains(sheet))
+                        if (FileDictHandler.FileDict[file].Keys.Contains(sheet))
                         {
                             referFile = file;
                             break;
@@ -358,7 +218,7 @@ namespace ExcelManager
                         mergedFile.Workbook.Worksheets[sheet].Cells[1, 2, mergedFile.Workbook.Worksheets[sheet].Rows.EndRow, mergedFile.Workbook.Worksheets[sheet].Columns.EndColumn].Clear();
                     }
 
-                    InitSheet(mergedFile.Workbook.Worksheets[sheet], fileDictHandler.FileDict[referFile][sheet]);
+                    InitSheet(mergedFile.Workbook.Worksheets[sheet], FileDictHandler.FileDict[referFile][sheet]);
                     mergingRowIdxDict.Add(sheet, 6);
                 }
                 // 저장해줘야 이후 Dimension을 정상적으로 체크 가능
@@ -368,7 +228,7 @@ namespace ExcelManager
                 ExcelWorksheet mergingSheet = null;
                 int _sourceRow, _sourceCol;
                 // Merge
-                foreach (string sourceFilePath in dataDictHandler.DataDict[_data].files)
+                foreach (string sourceFilePath in DataDictHandler.DataDict[_data].files)
                 {
                     try
                     {
@@ -426,7 +286,8 @@ namespace ExcelManager
                         if (sheet.Cells[5, _col].Value == null || sheet.Cells[5, _col].Value.ToString() == "")
                             break;
                     }
-                    sheet.Cells[5, 2, 6, _col].AutoFitColumns();
+                    // 컬럼 사이즈 러프하게 조정 (첫 번째 데이터 길이에 맞춰서 조정)
+                    sheet.Cells[5, 1, 6, _col].AutoFitColumns();
                 }
                 mergedFile.Save();
             }

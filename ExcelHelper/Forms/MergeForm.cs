@@ -12,17 +12,17 @@ namespace MergeForm
 
         Thread mainWork;
 
-        static string saveMergePath = ExcelHelperMain.saveDataPath + "\\MergedTable";
+        static string saveMergePath;
 
-        public MergeForm(ExcelManager.ExcelManager _excelManager)
+        public MergeForm(ExcelManager.ExcelManager _excelManager, string _workingStream)
         {
             InitializeComponent();
 
+            this.excelManager = _excelManager;
+
+            saveMergePath = ExcelHelperMain.saveDataPath + "\\" + _workingStream + "\\MergedTable";
             if (!Directory.Exists(saveMergePath)) { Directory.CreateDirectory(saveMergePath); }
 
-            this.FormBorderStyle = FormBorderStyle.FixedSingle;
-
-            this.excelManager = _excelManager;
 
             foreach (string item in this.excelManager.GetAllDividedData())
             {
@@ -46,6 +46,9 @@ namespace MergeForm
                         break;
                 }
             }
+
+            // Form Setting
+            this.FormBorderStyle = FormBorderStyle.FixedSingle;
         }
 
 

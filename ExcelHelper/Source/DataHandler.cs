@@ -8,6 +8,7 @@ namespace DataHandler
 {
     public class DataDictHandler
     {
+        #region DataInfo: Class for DataDict
         // 테이블을 이루고 있는 전체 data(시트) 리스트, 분리된 파일 리스트 정보를 보유할 class
         public class DataInfo
         {
@@ -46,32 +47,33 @@ namespace DataHandler
                 this.sheetList.AddRange(_newDataList);
             }
         }
-        
-        public Dictionary<string, DataInfo> DataDict;
+        #endregion
+
+        public static Dictionary<string, DataInfo> DataDict;
 
         public DataDictHandler()
         {
-            this.DataDict = new Dictionary<string, DataInfo>();
+            DataDict = new Dictionary<string, DataInfo>();
         }
-        public DataDictHandler(Dictionary<string, DataInfo> _dataDict)
+        public DataDictHandler(string _rootPath)
         {
-            this.DataDict = _dataDict;
+            DataDict = ReadSavedDataDict(_rootPath);
         }
 
-        public void SetData(FileDictHandler _fileDictHandler)
+        public void SetData()
         {
-            this.DataDict = null;
-            this.DataDict = new Dictionary<string, DataInfo>();
+            DataDict = null;
+            DataDict = new Dictionary<string, DataInfo>();
 
             bool hasData;
             string representSheet = "";
 
-            foreach (var file in _fileDictHandler.FileDict.Keys)
+            foreach (var file in FileDictHandler.FileDict.Keys)
             {
                 hasData = false;
 
                 // 해당 file의 시트 순회
-                foreach (var sheet in _fileDictHandler.FileDict[file].Keys)
+                foreach (var sheet in FileDictHandler.FileDict[file].Keys)
                 {
                     if (DataDict.ContainsKey(sheet))
                     {
@@ -84,7 +86,7 @@ namespace DataHandler
                 if (hasData)
                 {
                     // 특정 파일이 중간에 다른 시트 들고 있는 경우
-                    foreach (var fileSheet in _fileDictHandler.FileDict[file].Keys)
+                    foreach (var fileSheet in FileDictHandler.FileDict[file].Keys)
                     {
                         if (!DataDict[representSheet].sheetList.Contains(fileSheet))
                         {
@@ -93,25 +95,26 @@ namespace DataHandler
                     }
 
                     // File 리스트에 해당 file 추가
-                    this.DataDict[representSheet].AddFiles(file);
+                    DataDict[representSheet].AddFiles(file);
                 }
                 else
                 {
-                    this.DataDict.Add(_fileDictHandler.FileDict[file].Keys.ToArray().First(), new DataInfo(_fileDictHandler.FileDict[file].Keys.ToList(), file));
+                    DataDict.Add(FileDictHandler.FileDict[file].Keys.ToArray().First(), new DataInfo(FileDictHandler.FileDict[file].Keys.ToList(), file));
                 }
             }
         }
 
+        #region Util
         // 물리적으로 분리된 테이블 찾기
         public List<string> FindDivisionData()
         {
             List<string> tmpList = new List<string>();
             List<string> tmpForDistinguishFileName = new List<string>();
 
-            foreach (string e in this.DataDict.Keys)
+            foreach (string e in DataDict.Keys)
             {
                 tmpForDistinguishFileName.Clear();
-                this.DataDict[e].files.ForEach(s => tmpForDistinguishFileName.Add(s));
+                DataDict[e].files.ForEach(s => tmpForDistinguishFileName.Add(s));
 
                 tmpForDistinguishFileName.RemoveAll(s => s.Contains("Replace") || s.Contains("Override"));
 
@@ -127,21 +130,105 @@ namespace DataHandler
         {
             return DataDict.ContainsKey(_data);
         }
+        #endregion
+
+        #region Read, Save
+        Dictionary<string, DataInfo> ReadSavedDataDict(string _rootPath)
+        {
+            string representData = "";
+            
+            Dictionary<string, DataInfo> dataDict = new Dictionary<string, DataInfo>();
+            List<string> sheetList = new List<string>();
+            List<string> fileList = new List<string>();
+
+            string[] splitStr = new string[] { "..." };
+            foreach (var line in System.IO.File.ReadLines(_rootPath + "\\" + "DataDict.txt", Encoding.UTF8))
+            {
+                if (line.Contains("Next..."))
+                {
+                    DataInfo dataInfo = new DataInfo(sheetList, fileList);
+                    dataDict.Add(representData, dataInfo);
+                    continue;
+                }
+
+                if (line.Contains("RepresentData>>"))
+                {
+                    representData = line.Split(new string[] { ">>" }, StringSplitOptions.RemoveEmptyEntries)[1];
+                }
+                if (line.Contains("SheetList>>"))
+                {
+                    sheetList = new List<string>();
+                    foreach (var sheet in line.Split(splitStr, StringSplitOptions.RemoveEmptyEntries))
+                    {
+                        if (sheet.Contains("SheetList>>"))
+                            continue;
+
+                        sheetList.Add(sheet);
+                    }
+                }
+                if (line.Contains("FileList>>"))
+                {
+                    fileList = new List<string>();
+                    foreach (var file in line.Split(splitStr, StringSplitOptions.RemoveEmptyEntries))
+                    {
+                        if (file.Contains("FileList>>"))
+                            continue;
+
+                        fileList.Add(file);
+                    }
+                }
+            }
+
+            return dataDict;
+        }
+        public static void SaveDataDict(string _rootPath)
+        {
+            using (var newSaveFile = System.IO.File.CreateText(_rootPath + "\\" + "DataDict.txt"))
+            {
+                string tmpstr = "";
+
+                foreach (string e in DataDict.Keys)
+                {
+                    tmpstr += "RepresentData>>" + e + "\n"
+                        + "SheetList>>...";
+
+                    foreach (string d in DataDict[e].sheetList)
+                    {
+                        tmpstr += d + "...";
+                    }
+
+                    tmpstr += "\n"
+                        + "FileList>>...";
+
+                    foreach (string v in DataDict[e].files)
+                    {
+                        tmpstr += v + "...";
+                    }
+
+                    tmpstr += "\nNext...\n";
+                }
+
+                newSaveFile.Write(tmpstr);
+
+                newSaveFile.Close();
+            }
+        }
+        #endregion
     }
 
     public class FileDictHandler
     {
         // 개별 Table File 기준으로 Path, 시트, 컬럼 정보 보유
         // 머지 시, 개별 테이블 접근용도로 사용
-        public Dictionary<string, Dictionary<string, List<string>>> FileDict;
+        public static Dictionary<string, Dictionary<string, List<string>>> FileDict;
 
         public FileDictHandler()
         {
-            this.FileDict = new Dictionary<string, Dictionary<string, List<string>>>();
+            FileDict = new Dictionary<string, Dictionary<string, List<string>>>();
         }
-        public FileDictHandler(Dictionary<string, Dictionary<string, List<string>>> _fileDict)
+        public FileDictHandler(string _rootPath)
         {
-            this.FileDict = _fileDict;
+            FileDict = ReadSavedFileDict(_rootPath);
         }
 
         public void AddFile(string _filePath, string _sheet, List<string> _columns)
@@ -151,12 +238,85 @@ namespace DataHandler
                 Dictionary<string, List<string>> tmpDict = new Dictionary<string, List<string>>();
                 tmpDict.Add(_sheet, _columns.ToList());
 
-                this.FileDict.Add(_filePath, tmpDict);
+                FileDict.Add(_filePath, tmpDict);
             }
             else
             {
-                this.FileDict[_filePath].Add(_sheet, _columns.ToList());
+                FileDict[_filePath].Add(_sheet, _columns.ToList());
             }
         }
+
+        #region Read, Save
+        Dictionary<string, Dictionary<string, List<string>>> ReadSavedFileDict(string _rootPath)
+        {
+            string file = "";
+            Dictionary<string, Dictionary<string, List<string>>> fileDict = new Dictionary<string, Dictionary<string, List<string>>>();
+            string sheet = "";
+            Dictionary<string, List<string>> sheetDict = new Dictionary<string, List<string>>();
+            List<string> columnList = new List<string>();
+            string[] splitStr = new string[] { "..." };
+            foreach (var line in System.IO.File.ReadLines(_rootPath + "\\" + "FileDict.txt", Encoding.UTF8))
+            {
+                if (line.Contains("Next..."))
+                {
+                    fileDict.Add(file, sheetDict);
+                    continue;
+                }
+
+                if (line.Contains("File>>"))
+                {
+                    file = line.Split(new string[] { ">>" }, StringSplitOptions.RemoveEmptyEntries)[1];
+                    sheetDict = new Dictionary<string, List<string>>();
+                }
+                if (line.Contains("Sheet>>"))
+                {
+                    sheet = line.Split(new string[] { ">>" }, StringSplitOptions.RemoveEmptyEntries)[1];
+                }
+                if (line.Contains("ColumnList>>"))
+                {
+                    columnList = new List<string>();
+                    foreach (var column in line.Split(splitStr, StringSplitOptions.RemoveEmptyEntries))
+                    {
+                        if (column.Contains("ColumnList>>"))
+                            continue;
+
+                        columnList.Add(column);
+                    }
+
+                    sheetDict.Add(sheet, columnList);
+                }
+            }
+
+            return fileDict;
+        }
+        public static void SaveFileDict(string _rootPath)
+        {
+            using (var newSaveFile = System.IO.File.CreateText(_rootPath + "\\" + "FileDict.txt"))
+            {
+                string tmpstr = "";
+
+                foreach (string e in FileDict.Keys)
+                {
+                    tmpstr += "File>>" + e + "\n";
+
+                    foreach (string v in FileDict[e].Keys)
+                    {
+                        tmpstr += "Sheet>>" + v + "\n"
+                            + "ColumnList>>...";
+                        foreach (string col in FileDict[e][v])
+                        {
+                            tmpstr += col + "...";
+                        }
+                        tmpstr += "\n";
+                    }
+                    tmpstr += "\nNext...\n";
+                }
+
+                newSaveFile.Write(tmpstr);
+
+                newSaveFile.Close();
+            }
+        }
+        #endregion
     }
 }

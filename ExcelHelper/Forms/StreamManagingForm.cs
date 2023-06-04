@@ -80,18 +80,18 @@ namespace StreamManagingForm
             AddStreamPathTextBox.Text = null;
         }
 
-        void SetStreamDataList()
+        private void DeleteStreamDataButton_Click(object sender, EventArgs e)
         {
-            List<string[]> streamData = streamManager.GetStreamData();
+            if (StreamNameList.SelectedItem == null)
+                return;
 
-            foreach (string[] data in streamData)
-            {
-                StreamNameList.Items.Add(data[0]);
-                StreamPathList.Items.Add(data[1]);
+            int selectedIdx = StreamNameList.SelectedIndex;
 
-                StreamNameList.Show();
-                StreamPathList.Show();
-            }
+            StreamNameList.Items.RemoveAt(selectedIdx);
+            StreamPathList.Items.RemoveAt(selectedIdx);
+
+            StreamNameList.Show();
+            StreamPathList.Show();
         }
 
         public delegate void saveDataSendDelegate();
@@ -124,20 +124,22 @@ namespace StreamManagingForm
             saveDataSend();
         }
 
-        private void DeleteStreamDataButton_Click(object sender, EventArgs e)
+        #region Util
+        void SetStreamDataList()
         {
-            if (StreamNameList.SelectedItem == null)
-                return;
+            List<string[]> streamData = streamManager.GetStreamData();
 
-            int selectedIdx = StreamNameList.SelectedIndex;
+            foreach (string[] data in streamData)
+            {
+                StreamNameList.Items.Add(data[0]);
+                StreamPathList.Items.Add(data[1]);
 
-            StreamNameList.Items.RemoveAt(selectedIdx);
-            StreamPathList.Items.RemoveAt(selectedIdx);
-
-            StreamNameList.Show();
-            StreamPathList.Show();
+                StreamNameList.Show();
+                StreamPathList.Show();
+            }
         }
-
+        #endregion
+        #region Util for TextBox
         System.Drawing.Font inputFont = new System.Drawing.Font("굴림", 9, FontStyle.Regular);
         System.Drawing.Font nonInputFont = new System.Drawing.Font("굴림", 9, FontStyle.Italic);
 
@@ -175,5 +177,6 @@ namespace StreamManagingForm
                 AddStreamPathTextBox.Font= nonInputFont;
             }
         }
+        #endregion
     }
 }

@@ -135,7 +135,7 @@ namespace ExcelHelper
 
             if (ExcelManager.GetAllRepresentDataList() != null)
             {
-                MergeForm.MergeForm mergeForm = new MergeForm.MergeForm(this.ExcelManager);
+                MergeForm.MergeForm mergeForm = new MergeForm.MergeForm(this.ExcelManager, this.workingStream);
                 mergeForm.ShowDialog();
             }
             else
