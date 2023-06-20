@@ -1,5 +1,4 @@
 ﻿using DataHandler;
-using Perforce.P4;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -359,23 +358,6 @@ namespace ExcelManager
             }
 
             return columnLetter;
-        }
-
-        private static bool IsFileOpend(FileInfo _fileInfo)
-        {
-            try
-            {
-                using (FileStream fs = _fileInfo.Open(FileMode.Open, FileAccess.ReadWrite, FileShare.None))
-                {
-                    fs.Close();
-                }
-            }
-            catch (IOException)
-            {
-                return true;
-            }
-
-            return false;
         }
         #endregion
     }

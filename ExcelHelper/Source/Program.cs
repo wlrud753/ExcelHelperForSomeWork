@@ -9,7 +9,6 @@ using System.Runtime.Remoting.Messaging;
 using System.Security.Cryptography;
 using System.Security.Policy;
 using System.Windows.Forms;
-using Perforce.P4;
 
 using DataHandler;
 using ExcelManager;

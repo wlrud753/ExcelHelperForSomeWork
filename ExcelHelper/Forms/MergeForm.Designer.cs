@@ -34,6 +34,7 @@
             this.FilleListLabel = new System.Windows.Forms.Label();
             this.MergeButton = new System.Windows.Forms.Button();
             this.SavePathNotiLabel = new System.Windows.Forms.Label();
+            this.FolderOpenButton = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // DataListBox
@@ -78,7 +79,7 @@
             // 
             // MergeButton
             // 
-            this.MergeButton.Location = new System.Drawing.Point(25, 403);
+            this.MergeButton.Location = new System.Drawing.Point(25, 431);
             this.MergeButton.Name = "MergeButton";
             this.MergeButton.Size = new System.Drawing.Size(542, 35);
             this.MergeButton.TabIndex = 4;
@@ -89,17 +90,28 @@
             // SavePathNotiLabel
             // 
             this.SavePathNotiLabel.AutoSize = true;
-            this.SavePathNotiLabel.Location = new System.Drawing.Point(94, 441);
+            this.SavePathNotiLabel.Location = new System.Drawing.Point(23, 407);
             this.SavePathNotiLabel.Name = "SavePathNotiLabel";
-            this.SavePathNotiLabel.Size = new System.Drawing.Size(408, 12);
+            this.SavePathNotiLabel.Size = new System.Drawing.Size(394, 12);
             this.SavePathNotiLabel.TabIndex = 5;
-            this.SavePathNotiLabel.Text = "합쳐진 테이블은 실행 프로그램 폴더의 \'MergedTable\' 폴더에 저장됩니다.";
+            this.SavePathNotiLabel.Text = "※합쳐진 테이블은 \'내문서\\스트림\\MergedTable\' 폴더에 저장됩니다.";
+            // 
+            // FolderOpenButton
+            // 
+            this.FolderOpenButton.Location = new System.Drawing.Point(423, 402);
+            this.FolderOpenButton.Name = "FolderOpenButton";
+            this.FolderOpenButton.Size = new System.Drawing.Size(144, 23);
+            this.FolderOpenButton.TabIndex = 6;
+            this.FolderOpenButton.Text = "폴더 열기";
+            this.FolderOpenButton.UseVisualStyleBackColor = true;
+            this.FolderOpenButton.Click += new System.EventHandler(this.FolderOpenButton_Click);
             // 
             // MergeForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(605, 469);
+            this.ClientSize = new System.Drawing.Size(605, 482);
+            this.Controls.Add(this.FolderOpenButton);
             this.Controls.Add(this.SavePathNotiLabel);
             this.Controls.Add(this.MergeButton);
             this.Controls.Add(this.FilleListLabel);
@@ -123,5 +135,6 @@
         private System.Windows.Forms.Label FilleListLabel;
         private System.Windows.Forms.Button MergeButton;
         private System.Windows.Forms.Label SavePathNotiLabel;
+        private System.Windows.Forms.Button FolderOpenButton;
     }
 }

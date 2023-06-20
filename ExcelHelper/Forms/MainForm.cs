@@ -47,7 +47,6 @@ namespace ExcelHelper
                 }
 
                 SelectStreamComboBox.SelectedItem = workingStream;
-                GetStreamData(workingStream);
             }
             else
                 workingStream = null;
@@ -159,7 +158,7 @@ namespace ExcelHelper
             {
                 workingStream = cb.SelectedItem as string;
 
-                GetStreamData(workingStream);
+                GetStreamTableData(workingStream);
             }
         }
         
@@ -190,7 +189,7 @@ namespace ExcelHelper
             saveUtilPath = saveDataPath + "\\" + _stream + "\\util";
         }
 
-        void GetStreamData(string _stream)
+        void GetStreamTableData(string _stream)
         {
             SetStreamSavePath(_stream);
 
@@ -215,7 +214,7 @@ namespace ExcelHelper
                     // 저장돼 있던 테이블 개수와, 오픈 시점의 테이블 개수 비교
                     if (!utilities.CompareTableCount(saveUtilPath, Directory.GetFiles(tmpStreamPath, "*.xlsx", SearchOption.AllDirectories).Length))
                     {
-                        PopUpNoti.PopUpNoti nonEqualBetweenSavedAndNowTableCount = new PopUpNoti.PopUpNoti(PopUpNoti.PopUpNoti.popupType.noti, "Warning!!", "마지막 \'테이블 확인\' 이후 테이블 개수에 변화가 생겼습니다.\n\'전체 테이블 확인\' 기능을 수행해주세요.");
+                        PopUpNoti.PopUpNoti nonEqualBetweenSavedAndNowTableCount = new PopUpNoti.PopUpNoti(PopUpNoti.PopUpNoti.popupType.noti, _stream + ": Warning!!", "마지막 \'테이블 확인\' 이후 테이블 개수에 변화가 생겼습니다.\n\'전체 테이블 확인\' 기능을 수행해주세요.");
                         nonEqualBetweenSavedAndNowTableCount.ShowDialog();
 
                         UpdateTableDataButton.Text = "전체 테이블 확인\n"

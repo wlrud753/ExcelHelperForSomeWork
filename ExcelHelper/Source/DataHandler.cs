@@ -12,8 +12,8 @@ namespace DataHandler
         // 테이블을 이루고 있는 전체 data(시트) 리스트, 분리된 파일 리스트 정보를 보유할 class
         public class DataInfo
         {
-            public List<string> sheetList;
-            public List<string> files;
+            public List<string> sheetList { get; }
+            public List<string> files { get; }
 
             public DataInfo(List<string> _sheets, string _file)
             {

@@ -154,14 +154,17 @@ namespace MergeForm
                 completeNoti.ShowDialog();
 
                 System.Diagnostics.Process.Start(excelManager.GetMergedTableName(saveMergePath, data));
-
-                // It doesnt work in Office enviroment
-                //Application.Restart();
             }
         }
         void DoMerge(string _savePath, string _data)
         {
             excelManager.Merge(_savePath, _data);
+        }
+
+        private void FolderOpenButton_Click(object sender, EventArgs e)
+        {
+            if(saveMergePath != null)
+                System.Diagnostics.Process.Start(saveMergePath);
         }
     }
 }
