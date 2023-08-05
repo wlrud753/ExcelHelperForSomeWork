@@ -144,6 +144,11 @@ namespace ExcelHelper
                 noTableInfoNoti.ShowDialog();
             }
         }
+        private void QuestDataButton_Click(object sender, EventArgs e)
+        {
+            QuestForm.QuestForm questForm = new QuestForm.QuestForm();
+            questForm.ShowDialog();
+        }
 
         private void ExcelHelperMain_Load(object sender, EventArgs e)
         {
@@ -151,6 +156,7 @@ namespace ExcelHelper
         }
         #endregion
 
+        #region Stream
         private void SelectStreamComboBox_SelectedIndexChanged(object sender, EventArgs e)
         {
             ComboBox cb = (ComboBox)sender;
@@ -181,6 +187,7 @@ namespace ExcelHelper
             // MakeStreamDir에서 SavePath들이 전부 변경됐었기에, 지금 선택한 stream으로 SavePath 다시 변경
             SetStreamSavePath(workingStream);
         }
+        #endregion
 
         #region Utils
         void SetStreamSavePath(string _stream)
@@ -235,5 +242,7 @@ namespace ExcelHelper
             if (!Directory.Exists(saveUtilPath)) { Directory.CreateDirectory(saveUtilPath); }
         }
         #endregion
+
+        
     }
 }

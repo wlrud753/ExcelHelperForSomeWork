@@ -141,6 +141,7 @@
             this.QuestDataButton.TabIndex = 13;
             this.QuestDataButton.Text = "Quest";
             this.QuestDataButton.UseVisualStyleBackColor = true;
+            this.QuestDataButton.Click += new System.EventHandler(this.QuestDataButton_Click);
             // 
             // ExcelHelperMain
             // 
