@@ -57,40 +57,16 @@ namespace QuestForm
             {
                 ListViewItem listViewItem = new ListViewItem(warningQuest.questID);
 
-                switch (warningQuest.code)
+                listViewItem.SubItems.Add(ConvertCodeToString(warningQuest.code));
+
+                listViewItem.UseItemStyleForSubItems = false;
+                switch (warningQuest.warningType)
                 {
-                    case QuestManager.QuestManager.ReacceptableWarningCode.NotNpcAccpetTypeInGeneral:
-                        listViewItem.SubItems.Add("Npc 수락이 아닙니다.");
+                    case QuestManager.QuestManager.WarningType.JustWarning:
+                        listViewItem.SubItems[1].BackColor = Color.LightYellow;
                         break;
-                    case QuestManager.QuestManager.ReacceptableWarningCode.NotHaveAcceptNpc:
-                        listViewItem.SubItems.Add("수락 Npc가 없습니다.");
-                        break;
-                    case QuestManager.QuestManager.ReacceptableWarningCode.DesyncNpcQuestList:
-                        listViewItem.SubItems.Add("수락 Npc의 QuestList에 없습니다.");
-                        break;
-                    case QuestManager.QuestManager.ReacceptableWarningCode.FalseInShowHeadInfo:
-                        listViewItem.SubItems.Add("수락 아이콘이 출력되지 않습니다.");
-                        break;
-                    case QuestManager.QuestManager.ReacceptableWarningCode.AcceptNpcCanDeath:
-                        listViewItem.SubItems.Add("수락 Npc가 죽을 수 있습니다.");
-                        break;
-                    case QuestManager.QuestManager.ReacceptableWarningCode.AcceptNpcCanCombatWithFieldMonster:
-                        listViewItem.SubItems.Add("수락 Npc가 몬스터와 교전할 수 있습니다.");
-                        break;
-                    case QuestManager.QuestManager.ReacceptableWarningCode.AcceptNpcCanShowInFieldPermanently:
-                        listViewItem.SubItems.Add("수락 Npc가 필드에 상시 보입니다.");
-                        break;
-                    case QuestManager.QuestManager.ReacceptableWarningCode.NotExistAcceptNpcSpawnData:
-                        listViewItem.SubItems.Add("수락 Npc의 스포너가 없습니다.");
-                        break;
-                    case QuestManager.QuestManager.ReacceptableWarningCode.AcceptNpcNotSpawnInPermanentField:
-                        listViewItem.SubItems.Add("수락 Npc가 스폰되지 않습니다(스포너).");
-                        break;
-                    case QuestManager.QuestManager.ReacceptableWarningCode.AcceptNpcNotSpawnInPermanentField_SpawnLayer:
-                        listViewItem.SubItems.Add("수락 Npc가 스폰되지 않습니다(스폰레이어).");
-                        break;
-                    case QuestManager.QuestManager.ReacceptableWarningCode.LongDistanceBetweenAcceptNpcInInstanceAndPermanentField:
-                        listViewItem.SubItems.Add("인스턴스 <-> 필드 Npc 사이가 너무 떨어져 있습니다.");
+                    case QuestManager.QuestManager.WarningType.FatalWarning:
+                        listViewItem.SubItems[1].BackColor = Color.Firebrick;
                         break;
                 }
 
@@ -119,45 +95,55 @@ namespace QuestForm
             {
                 int selectedIdx = ReacceptableWarningQuestListView.SelectedItems[0].Index;
 
-                QuestManager.QuestManager.ReacceptableWarningQuestData warningQuest = QuestManager.QuestManager.reacceptableWarningQuestDataList.Find(q => q.questID == ReacceptableWarningQuestListView.Items[selectedIdx].SubItems[0].Text);
+                QuestManager.QuestManager.ReacceptableWarningQuestData warningQuest = QuestManager.QuestManager.reacceptableWarningQuestDataList.Find(q => q.questID == ReacceptableWarningQuestListView.Items[selectedIdx].SubItems[0].Text && ConvertCodeToString(q.code) == ReacceptableWarningQuestListView.Items[selectedIdx].SubItems[1].Text);
+
+                string warningLabelText = "";
 
                 switch (warningQuest.code)
                 {
                     case QuestManager.QuestManager.ReacceptableWarningCode.NotNpcAccpetTypeInGeneral:
-                        QuestDetailSection_WarningLabel.Text = "Npc 수락이 아닙니다.\nAcceptObjectType을 확인해주세요.";
+                        warningLabelText = "Npc 수락이 아닙니다.\nAcceptObjectType을 확인해주세요.";
                         break;
                     case QuestManager.QuestManager.ReacceptableWarningCode.NotHaveAcceptNpc:
-                        QuestDetailSection_WarningLabel.Text = "수락 Npc가 없습니다.\nAcceptObjectCuid를 확인해주세요.";
+                        warningLabelText = "수락 Npc가 없습니다.\nAcceptObjectCuid를 확인해주세요.";
+                        break;
+                    case QuestManager.QuestManager.ReacceptableWarningCode.NoneInNpcData:
+                        warningLabelText = "수락 Npc Data가 NpcTable에 없습니다.\nNpcTable을 확인해주세요.";
                         break;
                     case QuestManager.QuestManager.ReacceptableWarningCode.DesyncNpcQuestList:
-                        QuestDetailSection_WarningLabel.Text = "수락 Npc의 QuestList에 없습니다.\nNpcTable의 QuestList를 확인해주세요.";
+                        warningLabelText = "수락 Npc의 QuestList에 없습니다.\nNpcTable의 QuestList를 확인해주세요.";
                         break;
                     case QuestManager.QuestManager.ReacceptableWarningCode.FalseInShowHeadInfo:
-                        QuestDetailSection_WarningLabel.Text = "수락 아이콘이 출력되지 않습니다.\nNpcTable의 ShowHeadInfo를 확인해주세요.";
+                        warningLabelText = "수락 아이콘이 출력되지 않습니다.\nNpcTable의 ShowHeadInfo를 확인해주세요.";
                         break;
                     case QuestManager.QuestManager.ReacceptableWarningCode.AcceptNpcCanDeath:
-                        QuestDetailSection_WarningLabel.Text = "수락 Npc가 죽을 수 있습니다.\nNpcTable의 IsCapturable을 확인해주세요.";
+                        warningLabelText = "수락 Npc가 죽을 수 있습니다.\nNpcTable의 IsCapturable을 확인해주세요.";
                         break;
                     case QuestManager.QuestManager.ReacceptableWarningCode.AcceptNpcCanCombatWithFieldMonster:
-                        QuestDetailSection_WarningLabel.Text = "수락 Npc가 몬스터와 교전할 수 있습니다.\nNpcTable의 Faction을 확인해주세요.";
+                        warningLabelText = "수락 Npc가 몬스터와 교전할 수 있습니다.\nNpcTable의 Faction을 확인해주세요.";
                         break;
                     case QuestManager.QuestManager.ReacceptableWarningCode.AcceptNpcCanShowInFieldPermanently:
-                        QuestDetailSection_WarningLabel.Text = "수락 Npc가 필드에 상시 보입니다.\nNpcTable의 HipeNpc를 확인해주세요.";
+                        warningLabelText = "수락 Npc가 필드에 상시 보입니다.\nNpcTable의 HipeNpc를 확인해주세요.";
                         break;
                     case QuestManager.QuestManager.ReacceptableWarningCode.NotExistAcceptNpcSpawnData:
-                        QuestDetailSection_WarningLabel.Text = "수락 Npc의 스포너가 없습니다.";
+                        warningLabelText = "수락 Npc의 스포너가 없습니다.";
                         break;
                     case QuestManager.QuestManager.ReacceptableWarningCode.AcceptNpcNotSpawnInPermanentField:
-                        QuestDetailSection_WarningLabel.Text = "수락 Npc가 스폰되지 않습니다(스포너).\n스포너의 IsSpawnOnStartup을 확인해주세요.";
+                        warningLabelText = "수락 Npc가 스폰되지 않습니다(스포너).\n스포너의 IsSpawnOnStartup을 확인해주세요.";
                         break;
                     case QuestManager.QuestManager.ReacceptableWarningCode.AcceptNpcNotSpawnInPermanentField_SpawnLayer:
-                        QuestDetailSection_WarningLabel.Text = "수락 Npc가 스폰되지 않습니다(스폰레이어).\n스폰레이어의 IsActivateonStartup을 확인해주세요.";
+                        warningLabelText = "수락 Npc가 스폰되지 않습니다(스폰레이어).\n스폰레이어의 IsActivateonStartup을 확인해주세요.";
+                        break;
+                    case QuestManager.QuestManager.ReacceptableWarningCode.NotExistAcceptNpcFieldSpawnData:
+                        warningLabelText = "수락 Npc의 필드 스폰 데이터가 없습니다.\n인스턴스 스포너만 배치된 게 아닌지 확인해주세요.";
                         break;
                     case QuestManager.QuestManager.ReacceptableWarningCode.LongDistanceBetweenAcceptNpcInInstanceAndPermanentField:
-                        QuestDetailSection_WarningLabel.Text = "인스턴스 <-> 필드 Npc 사이가 너무 떨어져 있습니다.";
+                        warningLabelText = "인스턴스 <-> 필드 Npc 사이가 너무 떨어져 있습니다.";
                         break;
                 }
-                
+
+                QuestDetailSection_WarningLabel.Text = warningLabelText;
+
                 QuestDetailSection_QuestIdTextbox.Text = warningQuest.questID;
                 QuestDetailSection_NpcIdTextbox.Text = warningQuest.npcID;
                 QuestDetailSection_SpawnerIdTextbox.Text = warningQuest.spawnID;
@@ -166,7 +152,56 @@ namespace QuestForm
                 QuestDetailSection_NpcTableTextbox.Text = warningQuest.npcTableName;
                 QuestDetailSection_SpawnerTableTextbox.Text = warningQuest.spawnTableName;
             }
+        }
 
+        private string ConvertCodeToString(QuestManager.QuestManager.ReacceptableWarningCode _code)
+        {
+            string covertedString = "";
+
+            switch (_code)
+            {
+                case QuestManager.QuestManager.ReacceptableWarningCode.NotNpcAccpetTypeInGeneral:
+                    covertedString = "Npc 수락이 아닙니다.";
+                    break;
+                case QuestManager.QuestManager.ReacceptableWarningCode.NotHaveAcceptNpc:
+                    covertedString = "수락 Npc가 없습니다.";
+                    break;
+                case QuestManager.QuestManager.ReacceptableWarningCode.NoneInNpcData:
+                    covertedString = "수락 NpcData가 Table에 없습니다.";
+                    break;
+                case QuestManager.QuestManager.ReacceptableWarningCode.DesyncNpcQuestList:
+                    covertedString = "수락 Npc의 QuestList에 없습니다.";
+                    break;
+                case QuestManager.QuestManager.ReacceptableWarningCode.FalseInShowHeadInfo:
+                    covertedString = "수락 아이콘이 출력되지 않습니다.";
+                    break;
+                case QuestManager.QuestManager.ReacceptableWarningCode.AcceptNpcCanDeath:
+                    covertedString = "수락 Npc가 죽을 수 있습니다.";
+                    break;
+                case QuestManager.QuestManager.ReacceptableWarningCode.AcceptNpcCanCombatWithFieldMonster:
+                    covertedString = "수락 Npc가 몬스터와 교전할 수 있습니다.";
+                    break;
+                case QuestManager.QuestManager.ReacceptableWarningCode.AcceptNpcCanShowInFieldPermanently:
+                    covertedString = "수락 Npc가 필드에 상시 보입니다.";
+                    break;
+                case QuestManager.QuestManager.ReacceptableWarningCode.NotExistAcceptNpcSpawnData:
+                    covertedString = "수락 Npc의 스포너가 없습니다.";
+                    break;
+                case QuestManager.QuestManager.ReacceptableWarningCode.AcceptNpcNotSpawnInPermanentField:
+                    covertedString = "수락 Npc가 스폰되지 않습니다(스포너).";
+                    break;
+                case QuestManager.QuestManager.ReacceptableWarningCode.AcceptNpcNotSpawnInPermanentField_SpawnLayer:
+                    covertedString = "수락 Npc가 스폰되지 않습니다(스폰레이어).";
+                    break;
+                case QuestManager.QuestManager.ReacceptableWarningCode.NotExistAcceptNpcFieldSpawnData:
+                    covertedString = "수락 Npc가 필드에서 스폰되지 않습니다.";
+                    break;
+                case QuestManager.QuestManager.ReacceptableWarningCode.LongDistanceBetweenAcceptNpcInInstanceAndPermanentField:
+                    covertedString = "인스턴스 <-> 필드 Npc 사이가 너무 떨어져 있습니다.";
+                    break;
+            }
+
+            return covertedString;
         }
     }
 }

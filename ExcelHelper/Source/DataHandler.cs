@@ -103,6 +103,13 @@ namespace DataHandler
                 }
             }
         }
+        public void RemoveFiles(List<string> _removefiles)
+        {
+            foreach(var data in DataDict.Values)
+            {
+                data.files.RemoveAll(f => _removefiles.Contains(f));
+            }
+        }
 
         #region Util
         // 물리적으로 분리된 테이블 찾기
@@ -245,16 +252,26 @@ namespace DataHandler
                 FileDict[_filePath].Add(_sheet, _columns.ToList());
             }
         }
+        public void RemoveFiles(List<string> _removeFiles)
+        {
+            foreach (string removeFile in _removeFiles)
+            {
+                FileDict.Remove(removeFile);
+            }
+        }
 
         #region Read, Save
         Dictionary<string, Dictionary<string, List<string>>> ReadSavedFileDict(string _rootPath)
         {
             string file = "";
             Dictionary<string, Dictionary<string, List<string>>> fileDict = new Dictionary<string, Dictionary<string, List<string>>>();
+
             string sheet = "";
             Dictionary<string, List<string>> sheetDict = new Dictionary<string, List<string>>();
+
             List<string> columnList = new List<string>();
             string[] splitStr = new string[] { "..." };
+
             foreach (var line in System.IO.File.ReadLines(_rootPath + "\\" + "FileDict.txt", Encoding.UTF8))
             {
                 if (line.Contains("Next..."))

@@ -27,7 +27,8 @@ namespace ExcelHelper
         {
             InitializeComponent();
 
-            if (!Directory.Exists(saveDataPath)) { Directory.CreateDirectory(saveDataPath); }
+            if (!Directory.Exists(saveDataPath))
+                Directory.CreateDirectory(saveDataPath);
 
             if (StreamManager.HasSavedStreamData())
             {
@@ -76,6 +77,13 @@ namespace ExcelHelper
                 cannotFindStreamPath.ShowDialog();
                 return;
             }
+
+            UpdateTableForm.UpdateTableForm updateTableForm = new UpdateTableForm.UpdateTableForm(ExcelManager, StreamManager, utilities, saveDataPath, saveDictDataPath, saveUtilPath, streamTablePath, workingStream);
+            updateTableForm.ShowDialog();
+
+            UpdateTableDataButton.Text = "전체 테이블 확인";
+
+            return;
 
             // 진짜 하시겠습니까? popup noti
             PopUpNoti.PopUpNoti askUpdate = new PopUpNoti.PopUpNoti(PopUpNoti.PopUpNoti.popupType.ask, "UpdateTable", "정말 전체 테이블 정보를 확인하시겠습니까?");
@@ -146,8 +154,24 @@ namespace ExcelHelper
         }
         private void QuestDataButton_Click(object sender, EventArgs e)
         {
-            QuestForm.QuestForm questForm = new QuestForm.QuestForm();
-            questForm.ShowDialog();
+            if (System.IO.Directory.GetFiles(saveDictDataPath) == null || System.IO.Directory.GetFiles(saveDictDataPath).Length < 2)
+            {
+                PopUpNoti.PopUpNoti noTableInfoNoti = new PopUpNoti.PopUpNoti(PopUpNoti.PopUpNoti.popupType.noti, "Warning!!", "테이블 정보가 없어, 수행할 수 없습니다.\n'전체 테이블 확인'을 실행해주세요.");
+                noTableInfoNoti.ShowDialog();
+                return;
+            }
+
+            if (ExcelManager.GetAllRepresentDataList() != null)
+            {
+                QuestForm.QuestForm questForm = new QuestForm.QuestForm();
+                questForm.ShowDialog();
+            }
+            else
+            {
+                // 테이블 정보가 없는 경우 -> 수행 불가
+                PopUpNoti.PopUpNoti noTableInfoNoti = new PopUpNoti.PopUpNoti(PopUpNoti.PopUpNoti.popupType.noti, "Warning!!", "테이블 정보가 없어, 수행할 수 없습니다.\n'전체 테이블 확인'을 실행해주세요.");
+                noTableInfoNoti.ShowDialog();
+            }
         }
 
         private void ExcelHelperMain_Load(object sender, EventArgs e)
@@ -218,8 +242,8 @@ namespace ExcelHelper
 
                 if (tmpStreamPath.Contains("GameDesign") && tmpStreamPath.Contains("Table"))
                 {
-                    // 저장돼 있던 테이블 개수와, 오픈 시점의 테이블 개수 비교
-                    if (!utilities.CompareTableCount(saveUtilPath, Directory.GetFiles(tmpStreamPath, "*.xlsx", SearchOption.AllDirectories).Length))
+                    // 저장돼 있던 테이블 개수와, 오픈 시점의 테이블 개수 비교 (~$로 시작하는 찌꺼기 파일은 Count에서 제외)
+                    if (!utilities.CompareTableCount(saveUtilPath, Directory.GetFiles(tmpStreamPath, "*.xlsx", SearchOption.AllDirectories).ToList().FindAll(f => !f.Contains("~$")).Count))
                     {
                         PopUpNoti.PopUpNoti nonEqualBetweenSavedAndNowTableCount = new PopUpNoti.PopUpNoti(PopUpNoti.PopUpNoti.popupType.noti, _stream + ": Warning!!", "마지막 \'테이블 확인\' 이후 테이블 개수에 변화가 생겼습니다.\n\'전체 테이블 확인\' 기능을 수행해주세요.");
                         nonEqualBetweenSavedAndNowTableCount.ShowDialog();

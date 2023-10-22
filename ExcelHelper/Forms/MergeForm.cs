@@ -51,7 +51,6 @@ namespace MergeForm
             this.FormBorderStyle = FormBorderStyle.FixedSingle;
         }
 
-
         private void DataListBox_SelectedIndexChanged(object sender, EventArgs e)
         {
             if (DataListBox.SelectedItem != null)

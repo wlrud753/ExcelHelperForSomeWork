@@ -42,7 +42,18 @@ namespace ExcelManager
         }
         #endregion
 
-        #region Read Full Files
+        #region Delete File
+        public void DeleteFiles(string _savePath, List<string> _deletedFiles)
+        {
+            dataDictHandler.RemoveFiles(_deletedFiles);
+            fileDictHandler.RemoveFiles(_deletedFiles);
+
+            DataDictHandler.SaveDataDict(_savePath);
+            FileDictHandler.SaveFileDict(_savePath);
+        }
+        #endregion
+
+        #region Read Files
         // 루트 따라 파일 읽고, DataDict, FileDict 초기화
         public void ReadFilesFromFullio(string _rootPath, string _savePath)
         {
@@ -131,6 +142,99 @@ namespace ExcelManager
                 }
             }
             
+            // Set Data Dict
+            dataDictHandler.SetData();
+
+            SaveDicts(_savePath);
+        }
+
+        public void ReadFilesFromSpecificIO(string _rootPath, string _savePath, List<string> _files)
+        {
+            if (dataDictHandler == null || fileDictHandler == null)
+                return;
+
+            const string exceptionFilePrefix = "Merged_";
+            const string exceptionFileName_Replace = "Replace";
+            const string exceptionFileName_Override = "Override";
+            const string exceptionDir = "BotSetting";
+
+            List<string> files = _files;
+
+            FileStream stream = null;
+
+            foreach (string file in files)
+            {
+                // 파일 이름, Dir 예외처리
+                if (file.Contains(exceptionFilePrefix))
+                    continue;
+                if (file.Contains(exceptionFileName_Replace))
+                    continue;
+                if (file.Contains(exceptionFileName_Override))
+                    continue;
+                if (file.Contains(exceptionDir))
+                    continue;
+
+                try
+                {
+                    stream = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.Read);
+
+                    using (SpreadsheetDocument workbook = SpreadsheetDocument.Open(stream, false))
+                    {
+                        string _fileFullName = stream.Name;
+
+                        WorkbookPart workbookPart = workbook.WorkbookPart;
+                        IEnumerable<Sheet> sheets = workbookPart.Workbook.Descendants<Sheet>();
+                        foreach (Sheet sheet in sheets)
+                        {
+                            const string exceptionPrefix = ".";
+                            if (sheet.Name.Value.StartsWith(exceptionPrefix))
+                                continue;
+
+                            string _sheetName = sheet.Name.Value;
+                            List<string> _columns = new List<string>();
+
+                            WorksheetPart worksheetPart = (WorksheetPart)workbookPart.GetPartById(sheet.Id);
+                            SheetData sheetData = worksheetPart.Worksheet.Elements<SheetData>().First();
+
+                            Cell cell;
+
+                            // B5 기준, column들 전부 list에 집어넣기
+                            for (uint _col = 2; _col <= 1000; _col++)
+                            {
+                                cell = sheetData.Descendants<Cell>().Where(c => c.CellReference == GetCellReference(5, _col)).FirstOrDefault();
+
+                                if (cell == null)
+                                    break;
+
+                                string cellValue = GetCellValue(cell, workbookPart);
+
+                                if (cellValue == null || cellValue == "")
+                                {
+                                    break;
+                                }
+
+                                _columns.Add(cellValue);
+                            }
+
+                            fileDictHandler.AddFile(_fileFullName, _sheetName, _columns);
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    using (var debugLogFile = System.IO.File.CreateText(_savePath + "\\" + "ReadDebugLog.txt"))
+                    {
+                        string tmpstr = "Error in <" + file + "> " + e.Message + "\n";
+
+                        debugLogFile.WriteLine(tmpstr);
+                    }
+                }
+                finally
+                {
+                    stream.Dispose();
+                }
+            }
+
             // Set Data Dict
             dataDictHandler.SetData();
 

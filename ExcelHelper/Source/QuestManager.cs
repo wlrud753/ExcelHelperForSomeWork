@@ -1,11 +1,9 @@
-﻿using System;
+﻿using OfficeOpenXml;
+using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
-using DocumentFormat.OpenXml.Drawing;
-using DocumentFormat.OpenXml.Presentation;
-using OfficeOpenXml;
 
 namespace QuestManager
 {
@@ -16,8 +14,8 @@ namespace QuestManager
         struct QuestData
         {
             internal string questID { get; set; }
-            internal bool nonCancelable { get; set; }
-            internal string acceptObjectType { get; set; }
+            internal bool nonCancelable { get; set; } // nullable
+            internal string acceptObjectType { get; set; } // nullable
             internal string[] acceptObjectIds { get; set; } // nullable
             internal string questType { get; set; }
             internal string tableName { get; set; }
@@ -34,11 +32,11 @@ namespace QuestManager
         struct NpcData
         {
             internal string npcID { get; set; }
-            internal bool showHeadInfo { get; set; }
-            internal string faction { get; set; }
+            internal bool showHeadInfo { get; set; } // nullable
+            internal string faction { get; set; } // nullable로 침
             internal string[] questList { get; set; } // nullable
             internal bool hideNpc { get; set; }
-            internal bool isCapturable { get; set; }
+            internal bool isCapturable { get; set; } // nullable
             internal string tableName { get; set; }
         }
         struct InstanceFieldData
@@ -49,13 +47,14 @@ namespace QuestManager
         struct SpawnLayerData
         {
             internal string spawnLayerID { get; set; }
-            internal bool isActivateOnStartup{ get; set; }
+            internal bool isActivateOnStartup { get; set; }
         }
 
         public enum ReacceptableWarningCode
         {
             NotNpcAccpetTypeInGeneral, // General 퀘스트인데 Npc 수락이 아님
             NotHaveAcceptNpc, // 수락할 Npc가 없음
+            NoneInNpcData, // 수락 Npc 데이터가 없음
             DesyncNpcQuestList, // 수락 Npc의 QuestList에 해당 퀘스트가 없음
             FalseInShowHeadInfo, // 수락 Npc에게서 수락 아이콘이 보이지 않음
             AcceptNpcCanDeath, // 수락 Npc가 죽을 수 있음
@@ -64,24 +63,31 @@ namespace QuestManager
             NotExistAcceptNpcSpawnData, // 수락 Npc에 대한 스폰 데이터가 없음
             AcceptNpcNotSpawnInPermanentField, // 수락 Npc가 스폰되지 않음
             AcceptNpcNotSpawnInPermanentField_SpawnLayer, // 수락 Npc가 스폰되지 않음 (스폰레이어)
+            NotExistAcceptNpcFieldSpawnData, // 수락 Npc에 대한 필드 스폰 데이터가 없음
             LongDistanceBetweenAcceptNpcInInstanceAndPermanentField // 인스턴스 <-> 필드 Npc 사이가 너무 떨어져 있음 (Config 값 참조)
+        }
+        public enum WarningType
+        {
+            JustWarning, // 문제가 될 수 있음
+            FatalWarning // 블로커
         }
         public struct ReacceptableWarningQuestData
         {
-            internal ReacceptableWarningQuestData(string _questID, string _questTableName, ReacceptableWarningCode _code)
+            internal ReacceptableWarningQuestData(string _questID, string _questTableName, ReacceptableWarningCode _code, WarningType _warningType)
             {
                 questID = _questID;
                 questTableName = _questTableName;
 
                 npcID = null;
                 npcTableName = null;
-                
+
                 spawnID = null;
                 spawnTableName = null;
 
                 code = _code;
+                warningType = _warningType;
             }
-            internal ReacceptableWarningQuestData(string _questID, string _questTableName, string _npcID, string _npcTableName, ReacceptableWarningCode _code)
+            internal ReacceptableWarningQuestData(string _questID, string _questTableName, string _npcID, string _npcTableName, ReacceptableWarningCode _code, WarningType _warningType)
             {
                 questID = _questID;
                 questTableName = _questTableName;
@@ -89,12 +95,13 @@ namespace QuestManager
                 npcID = _npcID;
                 npcTableName = _npcTableName;
 
-                spawnID= null;
+                spawnID = null;
                 spawnTableName = null;
 
                 code = _code;
+                warningType = _warningType;
             }
-            internal ReacceptableWarningQuestData(string _questID, string _questTableName, string _npcID, string _npcTableName, string _spawnID, string _spawnTableName, ReacceptableWarningCode _code)
+            internal ReacceptableWarningQuestData(string _questID, string _questTableName, string _npcID, string _npcTableName, string _spawnID, string _spawnTableName, ReacceptableWarningCode _code, WarningType _warningType)
             {
                 questID = _questID;
                 questTableName = _questTableName;
@@ -106,6 +113,7 @@ namespace QuestManager
                 spawnTableName = _spawnTableName;
 
                 code = _code;
+                warningType = _warningType;
             }
 
             public string questID { get; }
@@ -118,6 +126,7 @@ namespace QuestManager
             public string spawnTableName { get; }
 
             public ReacceptableWarningCode code { get; }
+            public WarningType warningType { get; }
         }
         #endregion
 
@@ -125,80 +134,155 @@ namespace QuestManager
 
         public void FindQuestReacceptable()
         {
-            /* 
-             * QuestTable.Quest 시트 → AcceptObjectType, AcceptObjectCuid List
-             * QuestCuid 마다 저장
-             * 나머지 데이터들은, 파일 한 번씩 열고 그냥 List<string> 으로 일괄 저장 (IO 최소로 하고, 편하게 메모리를 더 많이 쓰자)
-             * 컬럼 명은 별도 txt 파일에서 긁어올 수 있게 (이후 추가)
-             */
             ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
 
+            // 관련 데이터 세팅
             List<QuestData> questDatas = ReadQuestData();
             List<SpawnData> spawnDatas = ReadSpawnData();
             List<NpcData> npcsDatas = ReadNpcData();
-            List<InstanceFieldData> instanceFieldsData = ReadInstanceFieldData();
-            //List<SpawnLayerData> spawnLayerData = ReadSpawnLayerData();
+            List<InstanceFieldData> instanceFieldsDatas = ReadInstanceFieldData();
+            List<SpawnLayerData> spawnLayerDatas = ReadSpawnLayerData();
 
             reacceptableWarningQuestDataList = new List<ReacceptableWarningQuestData>();
 
-            // 에러 판정
+            // 예외 대상 퀘스트, Npc 데이터
+            List<string> exceptionQuest = ReadExceptionQuest();
+            List<string> exceptionNpc = ReadExceptionNpc();
+
+            // 인스 <-> 필드 체크 거리
+            double maxDistanceInDisplay = ReadMaxDistanceInDisplay();
+
+            // 재수락 에러 판정
             foreach (var questData in questDatas)
             {
+                // 예외 퀘스트 체크
+                if(exceptionQuest != null)
+                {
+                    if (exceptionQuest.Any(e => e.Equals(questData.questID, StringComparison.OrdinalIgnoreCase)))
+                        continue;
+                }
+
                 if (questData.nonCancelable == true)
                     continue;
 
-                if(questData.acceptObjectType != "Npc")
+                if (questData.acceptObjectType == "Item")
+                    continue;
+
+                if (questData.acceptObjectType != "Npc")
                 {
                     if (questData.questType != "General")
                         continue;
                     else
-                        AddReacceptableWarningQuest(questData.questID, questData.tableName, ReacceptableWarningCode.NotNpcAccpetTypeInGeneral);
+                        AddReacceptableWarningQuest(questData.questID, questData.tableName, ReacceptableWarningCode.NotNpcAccpetTypeInGeneral, WarningType.FatalWarning);
                 }
                 else
                 {
                     if (questData.acceptObjectIds == null || questData.acceptObjectIds.Length == 0)
-                        AddReacceptableWarningQuest(questData.questID, questData.tableName, ReacceptableWarningCode.NotHaveAcceptNpc);
+                        AddReacceptableWarningQuest(questData.questID, questData.tableName, ReacceptableWarningCode.NotHaveAcceptNpc, WarningType.FatalWarning);
                     else
                     {
                         foreach (string npcId in questData.acceptObjectIds)
                         {
-                            NpcData npcData = npcsDatas.Find(e => e.npcID.Equals(npcId));
+                            // 예외 Npc 체크
+                            if (exceptionNpc != null)
+                            {
+                                if (exceptionNpc.Any(e => e.Equals(npcId, StringComparison.OrdinalIgnoreCase)))
+                                    continue;
+                            }
 
+                            NpcData npcData = npcsDatas.Find(e => e.npcID.Equals(npcId, StringComparison.OrdinalIgnoreCase));
+
+                            if (npcData.npcID == null)
+                            {
+                                AddReacceptableWarningQuest(questData.questID, questData.tableName, npcId, npcData.tableName, ReacceptableWarningCode.NoneInNpcData, WarningType.FatalWarning);
+                                continue;
+                            }
+                                
                             if (npcData.questList == null || !npcData.questList.Contains(questData.questID))
-                                AddReacceptableWarningQuest(questData.questID, questData.tableName, npcId, npcData.tableName, ReacceptableWarningCode.DesyncNpcQuestList);
-                            
-                            if(npcData.showHeadInfo == false)
-                                AddReacceptableWarningQuest(questData.questID, questData.tableName, npcId, npcData.tableName, ReacceptableWarningCode.FalseInShowHeadInfo);
+                                AddReacceptableWarningQuest(questData.questID, questData.tableName, npcId, npcData.tableName, ReacceptableWarningCode.DesyncNpcQuestList, WarningType.FatalWarning);
 
-                            if(npcData.faction != "NonAttackable" && npcData.isCapturable == true)
-                                AddReacceptableWarningQuest(questData.questID, questData.tableName, npcId, npcData.tableName, ReacceptableWarningCode.AcceptNpcCanDeath);
+                            if (npcData.showHeadInfo == false)
+                                AddReacceptableWarningQuest(questData.questID, questData.tableName, npcId, npcData.tableName, ReacceptableWarningCode.FalseInShowHeadInfo, WarningType.FatalWarning);
+
+                            if (npcData.faction != "NonAttackable" && npcData.isCapturable == true)
+                                AddReacceptableWarningQuest(questData.questID, questData.tableName, npcId, npcData.tableName, ReacceptableWarningCode.AcceptNpcCanDeath, WarningType.JustWarning);
 
                             if (npcData.faction == "QuestHelper" && npcData.isCapturable == true)
-                                AddReacceptableWarningQuest(questData.questID, questData.tableName, npcId, npcData.tableName, ReacceptableWarningCode.AcceptNpcCanCombatWithFieldMonster);
+                                AddReacceptableWarningQuest(questData.questID, questData.tableName, npcId, npcData.tableName, ReacceptableWarningCode.AcceptNpcCanCombatWithFieldMonster, WarningType.JustWarning);
 
                             if (npcData.hideNpc == false)
-                                AddReacceptableWarningQuest(questData.questID, questData.tableName, npcId, npcData.tableName, ReacceptableWarningCode.AcceptNpcCanShowInFieldPermanently);
+                                AddReacceptableWarningQuest(questData.questID, questData.tableName, npcId, npcData.tableName, ReacceptableWarningCode.AcceptNpcCanShowInFieldPermanently, WarningType.JustWarning);
 
 
                             // spawn Data
-                            List<SpawnData> spawnDatas_HasNpcId = spawnDatas.FindAll(e => e.npcList.Find(s => s.Equals(npcId)) != null);
+                            List<SpawnData> spawnDatas_HasNpcId = spawnDatas.FindAll(e => e.npcList.Find(s => s.Equals(npcId, StringComparison.OrdinalIgnoreCase)) != null);
 
-                            if(spawnDatas_HasNpcId == null || spawnDatas_HasNpcId.Count == 0)
+                            if (spawnDatas_HasNpcId == null || spawnDatas_HasNpcId.Count == 0)
                             {
-                                AddReacceptableWarningQuest(questData.questID, questData.tableName, npcId, npcData.tableName, ReacceptableWarningCode.NotExistAcceptNpcSpawnData);
+                                AddReacceptableWarningQuest(questData.questID, questData.tableName, npcId, npcData.tableName, ReacceptableWarningCode.NotExistAcceptNpcSpawnData, WarningType.FatalWarning);
                             }
                             else
                             {
-                                foreach(SpawnData spawnData in spawnDatas_HasNpcId)
-                                {
-                                    if (spawnData.isSpawnOnStartup == false)
-                                        AddReacceptableWarningQuest(questData.questID, questData.tableName, npcId, npcData.tableName, spawnData.spawnID, spawnData.tableName, ReacceptableWarningCode.AcceptNpcNotSpawnInPermanentField);
+                                List<SpawnData> fieldSpawnData = new List<SpawnData>();
+                                List<SpawnData> instanceSpawnData = new List<SpawnData>();
 
-                                    if(spawnData.spawnLayerID != null)
+                                foreach (SpawnData spawnData in spawnDatas_HasNpcId)
+                                {
+                                    // InstanceData 인지 우선 판별
+                                    bool isInstanceSpawn = false;
+
+                                    // spawnLayer Data
+                                    if (spawnData.spawnLayerID != null && spawnData.spawnLayerID != "")
                                     {
-                                        // spawnLayer 테이블 가져와서, 데이터 구조화 한 다음 에러 구성...
-                                        // 스폰 되는가? 체크 -> 인스턴스 스폰레이어면 체크 X
-                                        // 인스턴스 스폰레이어면 => 위치 체크해야 하는데...
+                                        foreach (InstanceFieldData insData in instanceFieldsDatas)
+                                        {
+                                            if (insData.spawnLayerIds == null || insData.spawnLayerIds.Length == 0)
+                                                continue;
+
+                                            if (insData.spawnLayerIds.Any(sl => sl.Equals(spawnData.spawnLayerID, StringComparison.OrdinalIgnoreCase)))
+                                            {
+                                                isInstanceSpawn = true;
+                                                instanceSpawnData.Add(spawnData);
+                                                break;
+                                            }
+                                        }
+                                    }
+
+                                    if (isInstanceSpawn == false)
+                                    {
+                                        fieldSpawnData.Add(spawnData);
+
+                                        if(spawnData.spawnLayerID == null || spawnData.spawnLayerID == "")
+                                        {
+                                            if (spawnData.isSpawnOnStartup == false)
+                                                AddReacceptableWarningQuest(questData.questID, questData.tableName, npcId, npcData.tableName, spawnData.spawnID, spawnData.tableName, ReacceptableWarningCode.AcceptNpcNotSpawnInPermanentField, WarningType.FatalWarning);
+                                        }
+                                        else if (spawnLayerDatas.Find(sl => sl.spawnLayerID.Equals(spawnData.spawnLayerID, StringComparison.OrdinalIgnoreCase)).isActivateOnStartup == true)
+                                        {
+                                            if(spawnData.isSpawnOnStartup == false)
+                                                AddReacceptableWarningQuest(questData.questID, questData.tableName, npcId, npcData.tableName, spawnData.spawnID, spawnData.tableName, ReacceptableWarningCode.AcceptNpcNotSpawnInPermanentField, WarningType.FatalWarning);
+                                        }
+                                        else
+                                            AddReacceptableWarningQuest(questData.questID, questData.tableName, npcId, npcData.tableName, spawnData.spawnID, spawnData.tableName, ReacceptableWarningCode.AcceptNpcNotSpawnInPermanentField_SpawnLayer, WarningType.FatalWarning);
+                                    }
+                                }
+
+                                if (fieldSpawnData == null || fieldSpawnData.Count == 0)
+                                    AddReacceptableWarningQuest(questData.questID, questData.tableName, npcId, npcData.tableName, ReacceptableWarningCode.NotExistAcceptNpcFieldSpawnData, WarningType.FatalWarning);
+
+                                // 인스턴스 Npc 있으면 -> 해당 Npc와 필드 Npc 위치 비교
+                                if (instanceSpawnData != null && instanceSpawnData.Count != 0)
+                                {
+                                    foreach (var fieldSpawn in fieldSpawnData)
+                                    {
+                                        foreach (var insSpawn in instanceSpawnData)
+                                        {
+                                            double distance = Math.Sqrt(Math.Pow(fieldSpawn.postion[0] - insSpawn.postion[0], 2) + Math.Pow(fieldSpawn.postion[1] - insSpawn.postion[1], 2));
+                                            distance = Math.Abs(distance);
+
+                                            if (distance > maxDistanceInDisplay)
+                                                AddReacceptableWarningQuest(questData.questID, questData.tableName, npcId, npcData.tableName, insSpawn.spawnID, insSpawn.tableName, ReacceptableWarningCode.LongDistanceBetweenAcceptNpcInInstanceAndPermanentField, WarningType.FatalWarning);
+                                        }
                                     }
                                 }
                             }
@@ -206,28 +290,22 @@ namespace QuestManager
                     }
                 }
             }
-
-            // 예외 퀘스트, Npc는 에러 판정 대상에서 제외할 수 있음 (빌드 폴더 내에 Config 항목 추가하기)
-            foreach(var reacceptableWarningQuest in reacceptableWarningQuestDataList)
-            {
-
-            }
         }
-        void AddReacceptableWarningQuest(string _questID, string _questTableName, ReacceptableWarningCode _code)
+        void AddReacceptableWarningQuest(string _questID, string _questTableName, ReacceptableWarningCode _code, WarningType _warningType)
         {
-            ReacceptableWarningQuestData questData = new ReacceptableWarningQuestData(_questID, _questTableName, _code);
+            ReacceptableWarningQuestData questData = new ReacceptableWarningQuestData(_questID, _questTableName, _code, _warningType);
 
             reacceptableWarningQuestDataList.Add(questData);
         }
-        void AddReacceptableWarningQuest(string _questID, string _questTableName, string _npcID, string _npcTableName, ReacceptableWarningCode _code)
+        void AddReacceptableWarningQuest(string _questID, string _questTableName, string _npcID, string _npcTableName, ReacceptableWarningCode _code, WarningType _warningType)
         {
-            ReacceptableWarningQuestData questData = new ReacceptableWarningQuestData(_questID, _questTableName, _npcID, _npcTableName, _code);
+            ReacceptableWarningQuestData questData = new ReacceptableWarningQuestData(_questID, _questTableName, _npcID, _npcTableName, _code, _warningType);
 
             reacceptableWarningQuestDataList.Add(questData);
         }
-        void AddReacceptableWarningQuest(string _questID, string _questTableName, string _npcID, string _npcTableName, string _spawnID, string _spawnTableName, ReacceptableWarningCode _code)
+        void AddReacceptableWarningQuest(string _questID, string _questTableName, string _npcID, string _npcTableName, string _spawnID, string _spawnTableName, ReacceptableWarningCode _code, WarningType _warningType)
         {
-            ReacceptableWarningQuestData questData = new ReacceptableWarningQuestData(_questID, _questTableName, _npcID, _npcTableName, _spawnID, _spawnTableName, _code);
+            ReacceptableWarningQuestData questData = new ReacceptableWarningQuestData(_questID, _questTableName, _npcID, _npcTableName, _spawnID, _spawnTableName, _code, _warningType);
 
             reacceptableWarningQuestDataList.Add(questData);
         }
@@ -283,19 +361,25 @@ namespace QuestManager
 
                         questData.questID = questSheet.Cells[row, colValue1].Value.ToString();
 
-                        if(questSheet.Cells[row, colValue2].Value != null)
+                        if (questSheet.Cells[row, colValue2].Value != null)
                             questData.nonCancelable = bool.Parse(questSheet.Cells[row, colValue2].Value.ToString());
                         else
                             questData.nonCancelable = false;
 
-                        questData.acceptObjectType = questSheet.Cells[row, colValue3].Value.ToString();
+                        if (questSheet.Cells[row, colValue3].Value != null)
+                            questData.acceptObjectType = questSheet.Cells[row, colValue3].Value.ToString();
+                        else
+                            questData.acceptObjectType = "Doodad";
 
                         if (questSheet.Cells[row, colValue4].Value != null)
                             questData.acceptObjectIds = questSheet.Cells[row, colValue4].Value.ToString().Split('\n');
                         else
                             questData.acceptObjectIds = null;
 
-                        questData.questType = questSheet.Cells[row, colValue5].Value.ToString();
+                        if (questSheet.Cells[row, colValue5].Value != null)
+                            questData.questType = questSheet.Cells[row, colValue5].Value.ToString();
+                        else
+                            questData.questType = "Sector";
 
                         questData.tableName = fileName;
 
@@ -304,120 +388,7 @@ namespace QuestManager
                     }
                 }
             }
-
             return questDatas;
-        }
-        List<SpawnData> ReadSpawnData()
-        {
-            List<string> spawnFiles = DataHandler.DataDictHandler.DataDict["NpcSpawner"].files;
-            
-            if (spawnFiles == null || spawnFiles.Count == 0)
-                return null;
-
-            List<SpawnData> spawnDatas = new List<SpawnData>();
-
-            int spawnerColValue1 = 2, spawnerColValue2 = 8, spawnerColValue3 = 12, spawnerColValue4 = 13, spawnerColValue5 = 14, spawnerColValue6 = 15;
-            int spawnCandidateColValue1 = 2, spawnCandidateColValue2 = 3, spawnCandidateColValue3 = 4;
-            string fileName;
-
-            foreach (string file in spawnFiles)
-            {
-                fileName = System.IO.Path.GetFileName(file);
-
-                using(ExcelPackage spawnFile = new ExcelPackage(file))
-                {
-                    ExcelWorksheet spawnerSheet = spawnFile.Workbook.Worksheets.Single(s => s.Name.Equals("NpcSpawner"));
-                    ExcelWorksheet spawnCandidateSheet = spawnFile.Workbook.Worksheets.Single(s => s.Name.Equals("NpcSpawnCandidate"));
-
-                    // 필요한 Col Idx 세팅
-                    if (file.Equals(spawnFiles.First()))
-                    {
-                        for (int col = 2; ; col++)
-                        {
-                            if (spawnerSheet.Cells[5, col].Value == null || spawnerSheet.Cells[5, col].Value.ToString() == "")
-                                break;
-
-                            if (spawnerSheet.Cells[5, col].Value.ToString() == "Cuid")
-                                spawnerColValue1 = col;
-                            if (spawnerSheet.Cells[5, col].Value.ToString() == "IsSpawnOnStartup")
-                                spawnerColValue2 = col;
-                            if (spawnerSheet.Cells[5, col].Value.ToString() == "SpawnLayerCuid")
-                                spawnerColValue3 = col;
-                            if (spawnerSheet.Cells[5, col].Value.ToString() == "LocationX_cm")
-                                spawnerColValue4 = col;
-                            if (spawnerSheet.Cells[5, col].Value.ToString() == "LocationY_cm")
-                                spawnerColValue5 = col;
-                            if (spawnerSheet.Cells[5, col].Value.ToString() == "LocationZ_cm")
-                                spawnerColValue6 = col;
-                        }
-
-                        for (int col = 2; ; col++)
-                        {
-                            if (spawnCandidateSheet.Cells[5, col].Value == null || spawnCandidateSheet.Cells[5, col].Value.ToString() == "")
-                                break;
-
-                            if (spawnCandidateSheet.Cells[5, col].Value.ToString() == "NpcSpawnerCuid")
-                                spawnCandidateColValue1 = col;
-                            if (spawnCandidateSheet.Cells[5, col].Value.ToString() == "SpawnPointIndex")
-                                spawnCandidateColValue2 = col;
-                            if (spawnCandidateSheet.Cells[5, col].Value.ToString() == "NpcCuid")
-                                spawnCandidateColValue3 = col;
-                        }
-                    }
-
-                    // 스포너 id 기반 Npc Cuid 탐색용으로, spawnCandidate 관련 데이터 우선 구조화
-                    Dictionary<string, string> spawnCandidateData = new Dictionary<string, string>();
-                    for (int row = 6; ; row++)
-                    {
-                        if (spawnCandidateSheet.Cells[row, spawnCandidateColValue1].Value == null || spawnCandidateSheet.Cells[row, spawnCandidateColValue1].Value.ToString() == "")
-                            break;
-
-                        // SpawnPoint > 1 인 경우, 같은 SpawnerID로 여러 NpcCuid가 연결될 수 있어서 해당 내용 보강
-                        // 이후 NpcCuid 기반 탐색 시, Value에서 내부 문자열 Find 하는 방식 (Value를 '\n'으로 split하는 것도 방법일듯)
-                        if(int.Parse(spawnCandidateSheet.Cells[row, spawnCandidateColValue2].Value.ToString()) == 1)
-                        {
-                            spawnCandidateData.Add(spawnCandidateSheet.Cells[row, spawnCandidateColValue1].Value.ToString(), spawnCandidateSheet.Cells[row, spawnCandidateColValue3].Value.ToString());
-                        }
-                        else
-                        {
-                            spawnCandidateData[spawnCandidateSheet.Cells[row, spawnCandidateColValue1].Value.ToString()] = spawnCandidateData[spawnCandidateSheet.Cells[row, spawnCandidateColValue1].Value.ToString()] + "/n" + spawnCandidateSheet.Cells[row, spawnCandidateColValue3].Value.ToString();
-                        }
-                    }
-
-                    // Spawner 데이터 구조화
-                    for (int row = 6; ; row++)
-                    {
-                        if (spawnerSheet.Cells[row, spawnerColValue1].Value == null || spawnerSheet.Cells[row, spawnerColValue1].Value.ToString() == "")
-                            break;
-
-                        SpawnData spawnData = new SpawnData();
-                        spawnData.spawnID = spawnerSheet.Cells[row, spawnerColValue1].Value.ToString();
-                        spawnData.isSpawnOnStartup = bool.Parse(spawnerSheet.Cells[row, spawnerColValue2].Value.ToString());
-
-                        if (spawnerSheet.Cells[row, spawnerColValue3].Value != null)
-                            spawnData.spawnLayerID = spawnerSheet.Cells[row, spawnerColValue3].Value.ToString();
-                        else
-                            spawnData.spawnLayerID = null;
-
-                        float[] pos = {float.Parse(spawnerSheet.Cells[row, spawnerColValue4].Value.ToString()),
-                                        float.Parse(spawnerSheet.Cells[row, spawnerColValue5].Value.ToString()),
-                                        float.Parse(spawnerSheet.Cells[row, spawnerColValue6].Value.ToString())};
-
-                        spawnData.postion = pos;
-
-                        // spawnCandidateData의 Value 값을 Split하면 List 나옴
-                        List<string> npcList = spawnCandidateData[spawnerSheet.Cells[row, spawnerColValue1].Value.ToString()].Split('\n').ToList();
-                        spawnData.npcList = npcList;
-
-                        spawnData.tableName = fileName;
-
-
-                        spawnDatas.Add(spawnData);
-                    }
-                }
-            }
-
-            return spawnDatas;
         }
         List<NpcData> ReadNpcData()
         {
@@ -471,7 +442,7 @@ namespace QuestManager
 
                         npcData.npcID = npcSheet.Cells[row, colValue1].Value.ToString();
 
-                        if(npcSheet.Cells[row, colValue2].Value != null)
+                        if (npcSheet.Cells[row, colValue2].Value != null)
                             npcData.showHeadInfo = bool.Parse(npcSheet.Cells[row, colValue2].Value.ToString());
                         else
                             npcData.showHeadInfo = false;
@@ -481,14 +452,17 @@ namespace QuestManager
                         else
                             npcData.questList = null;
 
-                        if(npcSheet.Cells[row, colValue4].Value != null)
+                        if (npcSheet.Cells[row, colValue4].Value != null)
                             npcData.hideNpc = bool.Parse(npcSheet.Cells[row, colValue4].Value.ToString());
                         else
                             npcData.hideNpc = false;
 
-                        npcData.faction = npcSheet.Cells[row, colValue5].Value.ToString();
+                        if (npcSheet.Cells[row, colValue5].Value != null)
+                            npcData.faction = npcSheet.Cells[row, colValue5].Value.ToString();
+                        else
+                            npcData.faction = "Helper";
 
-                        if(npcSheet.Cells[row, colValue6].Value != null)
+                        if (npcSheet.Cells[row, colValue6].Value != null)
                             npcData.isCapturable = bool.Parse(npcSheet.Cells[row, colValue6].Value.ToString());
                         else
                             npcData.isCapturable = false;
@@ -502,6 +476,117 @@ namespace QuestManager
             }
 
             return npcDatas;
+        }
+        List<SpawnData> ReadSpawnData()
+        {
+            List<string> spawnFiles = DataHandler.DataDictHandler.DataDict["NpcSpawner"].files;
+
+            if (spawnFiles == null || spawnFiles.Count == 0)
+                return null;
+
+            List<SpawnData> spawnDatas = new List<SpawnData>();
+
+            int spawnerColValue1 = 2, spawnerColValue2 = 8, spawnerColValue3 = 12, spawnerColValue4 = 13, spawnerColValue5 = 14/*, spawnerColValue6 = 15*/;
+            int spawnCandidateColValue1 = 2, spawnCandidateColValue2 = 3, spawnCandidateColValue3 = 4;
+            string fileName;
+
+            foreach (string file in spawnFiles)
+            {
+                fileName = System.IO.Path.GetFileName(file);
+
+                using (ExcelPackage spawnFile = new ExcelPackage(file))
+                {
+                    ExcelWorksheet spawnerSheet = spawnFile.Workbook.Worksheets.Single(s => s.Name.Equals("NpcSpawner"));
+                    ExcelWorksheet spawnCandidateSheet = spawnFile.Workbook.Worksheets.Single(s => s.Name.Equals("NpcSpawnCandidate"));
+
+                    // 필요한 Col Idx 세팅
+                    if (file.Equals(spawnFiles.First()))
+                    {
+                        for (int col = 2; ; col++)
+                        {
+                            if (spawnerSheet.Cells[5, col].Value == null || spawnerSheet.Cells[5, col].Value.ToString() == "")
+                                break;
+
+                            if (spawnerSheet.Cells[5, col].Value.ToString() == "Cuid")
+                                spawnerColValue1 = col;
+                            if (spawnerSheet.Cells[5, col].Value.ToString() == "IsSpawnOnStartup")
+                                spawnerColValue2 = col;
+                            if (spawnerSheet.Cells[5, col].Value.ToString() == "SpawnLayerCuid")
+                                spawnerColValue3 = col;
+                            if (spawnerSheet.Cells[5, col].Value.ToString() == "LocationX_cm")
+                                spawnerColValue4 = col;
+                            if (spawnerSheet.Cells[5, col].Value.ToString() == "LocationY_cm")
+                                spawnerColValue5 = col;
+                            //if (spawnerSheet.Cells[5, col].Value.ToString() == "LocationZ_cm") // x, y 좌표만 있으면 됨
+                            //    spawnerColValue6 = col;
+                        }
+
+                        for (int col = 2; ; col++)
+                        {
+                            if (spawnCandidateSheet.Cells[5, col].Value == null || spawnCandidateSheet.Cells[5, col].Value.ToString() == "")
+                                break;
+
+                            if (spawnCandidateSheet.Cells[5, col].Value.ToString() == "NpcSpawnerCuid")
+                                spawnCandidateColValue1 = col;
+                            if (spawnCandidateSheet.Cells[5, col].Value.ToString() == "SpawnPointIndex")
+                                spawnCandidateColValue2 = col;
+                            if (spawnCandidateSheet.Cells[5, col].Value.ToString() == "NpcCuid")
+                                spawnCandidateColValue3 = col;
+                        }
+                    }
+
+                    // 스포너 id 기반 Npc Cuid 탐색용으로, spawnCandidate 관련 데이터 우선 구조화
+                    Dictionary<string, string> spawnCandidateData = new Dictionary<string, string>();
+                    for (int row = 6; ; row++)
+                    {
+                        if (spawnCandidateSheet.Cells[row, spawnCandidateColValue1].Value == null || spawnCandidateSheet.Cells[row, spawnCandidateColValue1].Value.ToString() == "")
+                            break;
+
+                        // SpawnPoint > 1 인 경우, 같은 SpawnerID로 여러 NpcCuid가 연결될 수 있어서 해당 내용 보강
+                        // 이후 NpcCuid 기반 탐색 시, Value에서 내부 문자열 Find 하는 방식 (Value를 '\n'으로 split하는 것도 방법일듯)
+                        if (!spawnCandidateData.ContainsKey(spawnCandidateSheet.Cells[row, spawnCandidateColValue1].Value.ToString()))
+                        {
+                            spawnCandidateData.Add(spawnCandidateSheet.Cells[row, spawnCandidateColValue1].Value.ToString(), spawnCandidateSheet.Cells[row, spawnCandidateColValue3].Value.ToString());
+                        }
+                        else
+                        {
+                            spawnCandidateData[spawnCandidateSheet.Cells[row, spawnCandidateColValue1].Value.ToString()] = spawnCandidateData[spawnCandidateSheet.Cells[row, spawnCandidateColValue1].Value.ToString()] + "/n" + spawnCandidateSheet.Cells[row, spawnCandidateColValue3].Value.ToString();
+                        }
+                    }
+
+                    // Spawner 데이터 구조화
+                    for (int row = 6; ; row++)
+                    {
+                        if (spawnerSheet.Cells[row, spawnerColValue1].Value == null || spawnerSheet.Cells[row, spawnerColValue1].Value.ToString() == "")
+                            break;
+
+                        SpawnData spawnData = new SpawnData();
+                        spawnData.spawnID = spawnerSheet.Cells[row, spawnerColValue1].Value.ToString();
+                        spawnData.isSpawnOnStartup = bool.Parse(spawnerSheet.Cells[row, spawnerColValue2].Value.ToString());
+
+                        if (spawnerSheet.Cells[row, spawnerColValue3].Value != null)
+                            spawnData.spawnLayerID = spawnerSheet.Cells[row, spawnerColValue3].Value.ToString();
+                        else
+                            spawnData.spawnLayerID = null;
+
+                        float[] pos = {float.Parse(spawnerSheet.Cells[row, spawnerColValue4].Value.ToString()),
+                                        float.Parse(spawnerSheet.Cells[row, spawnerColValue5].Value.ToString()),
+                                        /*float.Parse(spawnerSheet.Cells[row, spawnerColValue6].Value.ToString())*/};
+
+                        spawnData.postion = pos;
+
+                        // spawnCandidateData의 Value 값을 Split하면 List 나옴
+                        spawnData.npcList = spawnCandidateData[spawnerSheet.Cells[row, spawnerColValue1].Value.ToString()].Split('\n').ToList();
+
+                        spawnData.tableName = fileName;
+
+
+                        spawnDatas.Add(spawnData);
+                    }
+                }
+            }
+
+            return spawnDatas;
         }
         List<InstanceFieldData> ReadInstanceFieldData()
         {
@@ -544,7 +629,7 @@ namespace QuestManager
 
                         instanceFieldData.instanceFieldID = instanceFieldSheet.Cells[row, colValue1].Value.ToString();
 
-                        if(instanceFieldSheet.Cells[row, colValue2].Value != null)
+                        if (instanceFieldSheet.Cells[row, colValue2].Value != null)
                             instanceFieldData.spawnLayerIds = instanceFieldSheet.Cells[row, colValue2].Value.ToString().Split('\n');
                         else
                             instanceFieldData.spawnLayerIds = null;
@@ -606,5 +691,74 @@ namespace QuestManager
             return spawnLayerDatas;
         }
         #endregion
+
+        #region Exception
+        List<string> ReadExceptionQuest()
+        {
+            List<string> exceptionQuest = new List<string>();
+
+            try
+            {
+                foreach(var line in File.ReadLines(Directory.GetCurrentDirectory() + "\\Config\\Quest" + "\\ExceptionQuestList.txt", Encoding.UTF8))
+                {
+                    exceptionQuest.Add(line);
+                }
+            }
+            catch
+            {
+                exceptionQuest = null;
+            }
+            finally
+            {
+                if (exceptionQuest != null && exceptionQuest.Count == 0)
+                {
+                    exceptionQuest = null;
+                }
+            }
+
+            return exceptionQuest;
+        }
+        List<string> ReadExceptionNpc()
+        {
+            List<string> exceptionNpc = new List<string>();
+
+            try
+            {
+                foreach (var line in File.ReadLines(Directory.GetCurrentDirectory() + "\\Config\\Quest" + "\\ExceptionNpcList.txt", Encoding.UTF8))
+                {
+                    exceptionNpc.Add(line);
+                }
+            }
+            catch
+            {
+                exceptionNpc = null;
+            }
+            finally
+            {
+                if (exceptionNpc != null && exceptionNpc.Count == 0)
+                {
+                    exceptionNpc = null;
+                }
+            }
+
+            return exceptionNpc;
+        }
+        #endregion
+
+        double ReadMaxDistanceInDisplay()
+        {
+            double maxDistance;
+
+            try
+            {
+                maxDistance = double.Parse(File.ReadLines(Directory.GetCurrentDirectory() + "\\Config\\Quest" + "\\MaxDistanceInDisplay.txt", Encoding.UTF8).First());
+            }
+            catch
+            {
+                maxDistance = 1500;
+            }
+
+            return maxDistance;
+        }
     }
 }

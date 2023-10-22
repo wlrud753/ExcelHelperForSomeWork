@@ -67,7 +67,7 @@
             this.ReacceptableWarningQuestListView.Location = new System.Drawing.Point(22, 23);
             this.ReacceptableWarningQuestListView.Name = "ReacceptableWarningQuestListView";
             this.ReacceptableWarningQuestListView.Size = new System.Drawing.Size(459, 459);
-            this.ReacceptableWarningQuestListView.TabIndex = 1;
+            this.ReacceptableWarningQuestListView.TabIndex = 3;
             this.ReacceptableWarningQuestListView.UseCompatibleStateImageBehavior = false;
             this.ReacceptableWarningQuestListView.View = System.Windows.Forms.View.Details;
             this.ReacceptableWarningQuestListView.SelectedIndexChanged += new System.EventHandler(this.ReacceptableWarningQuestListView_SelectedIndexChanged);
@@ -85,7 +85,6 @@
             // 
             // QuestDetailSection_TitleLabel
             // 
-            this.QuestDetailSection_TitleLabel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)));
             this.QuestDetailSection_TitleLabel.AutoSize = true;
             this.QuestDetailSection_TitleLabel.Font = new System.Drawing.Font("굴림", 13F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
             this.QuestDetailSection_TitleLabel.Location = new System.Drawing.Point(625, 38);
@@ -105,7 +104,6 @@
             // 
             // QuestDetailSection_QuestIdTextbox
             // 
-            this.QuestDetailSection_QuestIdTextbox.Anchor = System.Windows.Forms.AnchorStyles.Left;
             this.QuestDetailSection_QuestIdTextbox.Location = new System.Drawing.Point(603, 136);
             this.QuestDetailSection_QuestIdTextbox.Name = "QuestDetailSection_QuestIdTextbox";
             this.QuestDetailSection_QuestIdTextbox.ReadOnly = true;
@@ -123,7 +121,6 @@
             // 
             // QuestDetailSection_NpcIdTextbox
             // 
-            this.QuestDetailSection_NpcIdTextbox.Anchor = System.Windows.Forms.AnchorStyles.Left;
             this.QuestDetailSection_NpcIdTextbox.Location = new System.Drawing.Point(603, 174);
             this.QuestDetailSection_NpcIdTextbox.Name = "QuestDetailSection_NpcIdTextbox";
             this.QuestDetailSection_NpcIdTextbox.ReadOnly = true;
@@ -141,7 +138,6 @@
             // 
             // QuestDetailSection_SpawnerIdTextbox
             // 
-            this.QuestDetailSection_SpawnerIdTextbox.Anchor = System.Windows.Forms.AnchorStyles.Left;
             this.QuestDetailSection_SpawnerIdTextbox.Location = new System.Drawing.Point(603, 214);
             this.QuestDetailSection_SpawnerIdTextbox.Name = "QuestDetailSection_SpawnerIdTextbox";
             this.QuestDetailSection_SpawnerIdTextbox.ReadOnly = true;
@@ -150,7 +146,6 @@
             // 
             // QuestDetailSection_WarningLabel
             // 
-            this.QuestDetailSection_WarningLabel.Anchor = System.Windows.Forms.AnchorStyles.None;
             this.QuestDetailSection_WarningLabel.AutoSize = true;
             this.QuestDetailSection_WarningLabel.Font = new System.Drawing.Font("굴림", 9.5F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
             this.QuestDetailSection_WarningLabel.Location = new System.Drawing.Point(600, 87);
@@ -162,7 +157,6 @@
             // 
             // QuestDetailSection_TableInfoTitleLabel
             // 
-            this.QuestDetailSection_TableInfoTitleLabel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)));
             this.QuestDetailSection_TableInfoTitleLabel.AutoSize = true;
             this.QuestDetailSection_TableInfoTitleLabel.Font = new System.Drawing.Font("굴림", 11F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
             this.QuestDetailSection_TableInfoTitleLabel.Location = new System.Drawing.Point(634, 312);
@@ -183,7 +177,6 @@
             // 
             // QuestDetailSection_QuestTableTextbox
             // 
-            this.QuestDetailSection_QuestTableTextbox.Anchor = System.Windows.Forms.AnchorStyles.Left;
             this.QuestDetailSection_QuestTableTextbox.Location = new System.Drawing.Point(603, 346);
             this.QuestDetailSection_QuestTableTextbox.Name = "QuestDetailSection_QuestTableTextbox";
             this.QuestDetailSection_QuestTableTextbox.ReadOnly = true;
@@ -201,7 +194,6 @@
             // 
             // QuestDetailSection_NpcTableTextbox
             // 
-            this.QuestDetailSection_NpcTableTextbox.Anchor = System.Windows.Forms.AnchorStyles.Left;
             this.QuestDetailSection_NpcTableTextbox.Location = new System.Drawing.Point(603, 384);
             this.QuestDetailSection_NpcTableTextbox.Name = "QuestDetailSection_NpcTableTextbox";
             this.QuestDetailSection_NpcTableTextbox.ReadOnly = true;
@@ -219,7 +211,6 @@
             // 
             // QuestDetailSection_SpawnerTableTextbox
             // 
-            this.QuestDetailSection_SpawnerTableTextbox.Anchor = System.Windows.Forms.AnchorStyles.Left;
             this.QuestDetailSection_SpawnerTableTextbox.Location = new System.Drawing.Point(603, 424);
             this.QuestDetailSection_SpawnerTableTextbox.Name = "QuestDetailSection_SpawnerTableTextbox";
             this.QuestDetailSection_SpawnerTableTextbox.ReadOnly = true;
@@ -230,21 +221,21 @@
             // 
             this.QuestDetailSection_CanCopyNotiLabel02.AutoSize = true;
             this.QuestDetailSection_CanCopyNotiLabel02.Font = new System.Drawing.Font("굴림", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.QuestDetailSection_CanCopyNotiLabel02.Location = new System.Drawing.Point(687, 469);
+            this.QuestDetailSection_CanCopyNotiLabel02.Location = new System.Drawing.Point(653, 469);
             this.QuestDetailSection_CanCopyNotiLabel02.Name = "QuestDetailSection_CanCopyNotiLabel02";
-            this.QuestDetailSection_CanCopyNotiLabel02.Size = new System.Drawing.Size(101, 11);
+            this.QuestDetailSection_CanCopyNotiLabel02.Size = new System.Drawing.Size(175, 11);
             this.QuestDetailSection_CanCopyNotiLabel02.TabIndex = 2;
-            this.QuestDetailSection_CanCopyNotiLabel02.Text = "↑↑↑복사 가능↑↑↑";
+            this.QuestDetailSection_CanCopyNotiLabel02.Text = "↑↑↑더블클릭 이후 복사 가능↑↑↑";
             // 
             // QuestDetailSection_CanCopyNotiLabel01
             // 
             this.QuestDetailSection_CanCopyNotiLabel01.AutoSize = true;
             this.QuestDetailSection_CanCopyNotiLabel01.Font = new System.Drawing.Font("굴림", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.QuestDetailSection_CanCopyNotiLabel01.Location = new System.Drawing.Point(687, 254);
+            this.QuestDetailSection_CanCopyNotiLabel01.Location = new System.Drawing.Point(653, 254);
             this.QuestDetailSection_CanCopyNotiLabel01.Name = "QuestDetailSection_CanCopyNotiLabel01";
-            this.QuestDetailSection_CanCopyNotiLabel01.Size = new System.Drawing.Size(101, 11);
+            this.QuestDetailSection_CanCopyNotiLabel01.Size = new System.Drawing.Size(175, 11);
             this.QuestDetailSection_CanCopyNotiLabel01.TabIndex = 2;
-            this.QuestDetailSection_CanCopyNotiLabel01.Text = "↑↑↑복사 가능↑↑↑";
+            this.QuestDetailSection_CanCopyNotiLabel01.Text = "↑↑↑더블클릭 이후 복사 가능↑↑↑";
             // 
             // QuestDetailSection_WarningNotiLabel
             // 
